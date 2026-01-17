@@ -1,0 +1,14 @@
+[project]
+name = "mailtool"
+version = "0.1.0"
+description = "Outlook automation bridge for WSL2"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.optional-dependencies]
+windows = [
+    "pywin32>=306",
+]
+
+[tool.uv]
+dev-dependencies = []
