@@ -19,7 +19,7 @@ class TestTasks:
     """Test task-related functionality"""
 
     def test_list_tasks(self, bridge):
-        """Test listing all tasks"""
+        """Test listing tasks (default: incomplete only)"""
         tasks = bridge.list_tasks()
         assert isinstance(tasks, list)
 
@@ -27,6 +27,32 @@ class TestTasks:
             assert isinstance(task, dict)
             assert "entry_id" in task
             assert "subject" in task
+            # Default behavior: should only return incomplete tasks
+            assert task["complete"] is False
+
+    def test_list_all_tasks(self, bridge):
+        """Test listing all tasks including completed"""
+        tasks = bridge.list_all_tasks()
+        assert isinstance(tasks, list)
+
+        for task in tasks:
+            assert isinstance(task, dict)
+            assert "entry_id" in task
+            assert "subject" in task
+
+    def test_list_tasks_include_completed(self, bridge):
+        """Test listing tasks with include_completed flag"""
+        # Default: incomplete only
+        incomplete_tasks = bridge.list_tasks(include_completed=False)
+        assert isinstance(incomplete_tasks, list)
+        for task in incomplete_tasks:
+            assert task["complete"] is False
+
+        # All tasks
+        all_tasks = bridge.list_tasks(include_completed=True)
+        assert isinstance(all_tasks, list)
+        # all_tasks should be >= incomplete_tasks
+        assert len(all_tasks) >= len(incomplete_tasks)
 
     def test_create_task_basic(self, bridge, test_timestamp, cleanup_helpers):
         """Test creating a basic task"""
@@ -222,7 +248,7 @@ class TestTasks:
 
         # Verify not complete initially
         task = bridge.get_task(entry_id)
-        task["complete"]
+        assert task["complete"] is False
 
         # Mark as complete
         result = bridge.complete_task(entry_id)

@@ -396,7 +396,20 @@ class MCPServer:
             # Task tools
             {
                 "name": "list_tasks",
-                "description": "List all tasks",
+                "description": "List incomplete tasks (only active tasks by default)",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "include_completed": {
+                            "type": "boolean",
+                            "description": "Include completed tasks in results (default: false)",
+                        },
+                    },
+                },
+            },
+            {
+                "name": "list_all_tasks",
+                "description": "List all tasks including completed ones",
                 "inputSchema": {
                     "type": "object",
                     "properties": {},
@@ -699,7 +712,17 @@ class MCPServer:
 
             # Task operations
             elif tool_name == "list_tasks":
-                result = self.bridge.list_tasks()
+                result = self.bridge.list_tasks(
+                    include_completed=arguments.get("include_completed", False)
+                )
+                return {
+                    "result": {
+                        "content": [{"type": "text", "text": json.dumps(result)}]
+                    }
+                }
+
+            elif tool_name == "list_all_tasks":
+                result = self.bridge.list_all_tasks()
                 return {
                     "result": {
                         "content": [{"type": "text", "text": json.dumps(result)}]

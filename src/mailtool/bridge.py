@@ -764,9 +764,12 @@ class OutlookBridge:
                 pass
         return False
 
-    def list_tasks(self):
+    def list_tasks(self, include_completed=False):
         """
-        List all tasks
+        List tasks (only incomplete by default)
+
+        Args:
+            include_completed: If True, return all tasks. If False (default), return only incomplete tasks.
 
         Returns:
             List of task dictionaries
@@ -777,6 +780,10 @@ class OutlookBridge:
         tasks = []
         for item in items:
             try:
+                # Skip completed tasks unless include_completed is True
+                if not include_completed and item.Complete:
+                    continue
+
                 task = {
                     "entry_id": item.EntryID,
                     "subject": item.Subject
@@ -800,6 +807,15 @@ class OutlookBridge:
                 continue
 
         return tasks
+
+    def list_all_tasks(self):
+        """
+        List all tasks including completed ones
+
+        Returns:
+            List of task dictionaries
+        """
+        return self.list_tasks(include_completed=True)
 
     def create_task(self, subject, body="", due_date=None, importance=1):
         """
