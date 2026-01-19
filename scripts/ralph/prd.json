@@ -121,7 +121,7 @@
       "title": "Implement delete_task tool",
       "description": "Migrate delete_task tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle bridge.delete_task() call",
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "phase": 3
     },
     {

@@ -254,7 +254,7 @@ def delete_appointment(entry_id: str) -> OperationResult:
 
 
 # ============================================================================
-# Task Tools (US-010: get_task, US-012: complete_task)
+# Task Tools (US-010: get_task, US-012: complete_task, US-015: delete_task)
 # ============================================================================
 
 
@@ -332,6 +332,41 @@ def complete_task(entry_id: str) -> OperationResult:
         return OperationResult(
             success=False,
             message="Failed to mark task as complete",
+        )
+
+
+@mcp.tool()
+def delete_task(entry_id: str) -> OperationResult:
+    """
+    Delete a task.
+
+    Permanently deletes a task using O(1) direct access via EntryID.
+
+    Args:
+        entry_id: Outlook EntryID of the task (O(1) direct access)
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Delete task via bridge
+    result = bridge.delete_task(entry_id)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message="Task deleted successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message="Failed to delete task",
         )
 
 
