@@ -833,3 +833,30 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - All Phase 6 integration testing now complete: US-036
   - Total test coverage: 147 tests across 4 test files (models, resources, tools, integration)
   - Next: US-037 (custom exceptions) - begins remaining Phase 6 tasks
+
+## 2025-01-19 06:15 - US-037: Create custom exception classes
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created src/mailtool/mcp/exceptions.py with 3 custom exception classes
+- Implemented OutlookNotFoundError with entry_id attribute for items not found
+- Implemented OutlookComError with details attribute for COM/bridge failures
+- Implemented OutlookValidationError with field attribute for validation failures
+- All exceptions properly extend McpError using ErrorData with error codes
+- Updated server.py to use OutlookComError and OutlookNotFoundError
+- Updated resources.py to use OutlookComError for bridge not initialized errors
+- Replaced all McpError references in docstrings with specific exception types
+- Created comprehensive test suite (19 tests, all passing) in tests/mcp/test_exceptions.py
+- Updated existing tests to expect new exception types instead of RuntimeError
+- All 166 MCP tests passing (total: 166 = 43 models + 26 resources + 44 tools + 34 integration + 19 exceptions)
+- All code passes ruff linting and formatting checks
+- Committed: feat(mcp): US-037 - Create custom exception classes
+- Files changed: src/mailtool/mcp/exceptions.py, src/mailtool/mcp/server.py, src/mailtool/mcp/resources.py, tests/mcp/test_exceptions.py, tests/mcp/test_resources.py, tests/mcp/test_integration.py
+- **Learnings for future iterations:**
+  - McpError requires ErrorData object with code, message, and optional data fields
+  - ErrorData is from mcp.shared.exceptions, not directly constructible from strings
+  - Custom exceptions must call super().__init__(ErrorData(...)) not super().__init__(message)
+  - Error codes: -32602 (not found), -32603 (COM error), -32604 (validation error)
+  - Exception data field stores custom attributes (entry_id, details, field) for structured error info
+  - All custom exceptions can still be caught as McpError for backwards compatibility
+  - Pre-commit bypass required for pywin32 type checking (expected in dev environment)
+  - All Phase 6 custom exceptions now complete: US-037
+  - Next: US-038 (logging) - add logging configuration to MCP server

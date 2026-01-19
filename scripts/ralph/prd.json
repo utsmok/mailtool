@@ -297,7 +297,7 @@
       "title": "Create custom exception classes",
       "description": "Create src/mailtool/mcp/exceptions.py with OutlookNotFoundError, OutlookComError, OutlookValidationError classes extending McpError",
       "priority": 37,
-      "passes": false,
+      "passes": true,
       "phase": 6
     },
     {
