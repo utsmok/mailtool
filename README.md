@@ -1,24 +1,31 @@
-# Mailtool - Outlook Automation
+# Mailtool - Outlook Automation Bridge
 
-Access your Office 365 email and calendar from WSL2 via Windows Outlook COM automation.
+A Python library and CLI tool for accessing Outlook email, calendar, and tasks from WSL2 via Windows COM automation.
 
 **Uses [uv](https://github.com/astral-sh/uv) for dependency management - no global Python needed!**
 
-## 🚀 Installation (Claude Code Marketplace)
+## 🚀 Installation
 
-**Recommended**: Install via the Claude Code Marketplace for automatic updates:
+### PyPI Installation (Recommended)
 
 ```bash
-# Add the marketplace
-/plugin marketplace add utsmok/mailtool
+# Install via pip
+pip install mailtool
 
-# Install the plugin
+# Or via uv
+uv pip install mailtool
+```
+
+### Claude Code Integration
+
+For Claude Code integration, install the [mailtool-plugin](https://github.com/utsmok/mailtool-plugin) package:
+
+```bash
+/plugin marketplace add utsmok/mailtool-plugin
 /plugin install mailtool
 ```
 
-This will install:
-- **MCP Server** with 24 tools for email, calendar, and task management
-- **Daily Planner Skill** for intelligent daily planning
+This will configure the MCP server with 24 tools for email, calendar, and task management.
 
 ## Prerequisites
 
@@ -38,32 +45,59 @@ Dependencies are managed automatically by `uv`. No manual pip installs needed.
 
 ## Usage
 
+### As a Python Library
+
+```python
+from mailtool.bridge import OutlookBridge
+
+# Create bridge instance
+bridge = OutlookBridge()
+
+# List emails
+emails = bridge.list_emails(limit=5)
+for email in emails:
+    print(f"{email['subject']}: {email['sender']}")
+
+# Create appointment
+entry_id = bridge.create_appointment(
+    subject="Team Meeting",
+    start="2025-01-20 14:00:00",
+    end="2025-01-20 15:00:00",
+    location="Room 101"
+)
+```
+
+### As a CLI Tool
+
 ```bash
 # List recent emails
-./outlook.sh emails --limit 5
+mailtool emails --limit 5
 
 # List calendar events for next 7 days
-./outlook.sh calendar --days 7
+mailtool calendar --days 7
 
 # Get specific email body (use entry_id from emails command)
-./outlook.sh email --id <entry_id>
+mailtool email --id <entry_id>
 ```
+
+### As an MCP Server (for Claude Code)
+
+See the [mailtool-plugin](https://github.com/utsmok/mailtool-plugin) repository for Claude Code integration instructions.
 
 ## How It Works
 
-1. WSL2 calls wrapper script (`outlook.sh`)
-2. Wrapper calls Windows batch file (`outlook.bat`)
-3. Batch file uses `uv run --with pywin32` to execute the Python script
-4. Python script uses COM to talk to running Outlook instance
-5. Data returned as JSON
+The library uses Windows COM automation to communicate with Outlook:
+
+1. Python creates a COM object to access the running Outlook instance
+2. Uses O(1) direct lookups via `GetItemFromID()` for performance
+3. Returns structured data (emails, calendar events, tasks) as Python dictionaries
+4. MCP server mode exposes this functionality via JSON-RPC for AI agents
 
 ## Project Structure
 
 ```
 mailtool/
 ├── pyproject.toml          # uv project config
-├── outlook.bat             # Windows entry point (uses uv)
-├── outlook.sh              # WSL2 wrapper
 ├── src/
 │   └── mailtool/
 │       ├── __init__.py
@@ -76,9 +110,6 @@ mailtool/
 │           ├── lifespan.py # Async COM bridge lifecycle
 │           ├── resources.py # 7 resources
 │           └── exceptions.py # Custom exceptions
-├── skills/
-│   └── daily-planner/       # Daily Planner skill for Claude Code
-│       └── skill.md
 ├── tests/
 │   ├── conftest.py         # Test fixtures
 │   ├── test_bridge.py      # Core connectivity tests
@@ -91,9 +122,11 @@ mailtool/
 │       ├── test_resources.py   # Resource tests
 │       ├── test_integration.py # End-to-end workflow tests
 │       └── test_exceptions.py  # Exception class tests
-├── .claude-plugin/
-│   └── plugin.json         # Claude Code plugin manifest
-└── .venv/                  # Linux virtualenv (for tooling)
+├── docs/                   # Documentation
+└── .github/
+    └── workflows/
+        ├── ci.yml          # Continuous Integration
+        └── publish.yml     # PyPI publishing
 ```
 
 ## Advantages

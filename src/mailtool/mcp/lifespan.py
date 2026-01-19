@@ -40,15 +40,22 @@ async def outlook_lifespan(app):
     Raises:
         Exception: If Outlook cannot be connected to after retry attempts
     """
+    import sys
+    import traceback as tb
+
     bridge = None
     try:
-        logger.info("Initializing Outlook bridge...")
+        # Log lifespan start (using stderr to ensure visibility)
+        logger.error("=" * 60)
+        logger.error("LIFESPAN: Starting Outlook bridge initialization")
+        logger.error("=" * 60)
 
         # Create Outlook bridge instance (synchronous COM call)
         # Note: We run this in a thread pool since COM calls are synchronous
         loop = asyncio.get_event_loop()
-        bridge = await loop.run_in_executor(None, _create_bridge)
 
+        logger.info("Creating Outlook bridge...")
+        bridge = await loop.run_in_executor(None, _create_bridge)
         logger.info("Outlook bridge created successfully")
 
         # Warmup: Test that COM is responsive with retries
@@ -64,10 +71,12 @@ async def outlook_lifespan(app):
                 break  # Success - exit retry loop
             except Exception as e:
                 logger.warning(f"Warmup attempt {attempt}/{max_retries} failed: {e}")
+                logger.error(f"Exception traceback:\n{''.join(tb.format_exception(type(e), e, e.__traceback__))}")
                 if attempt == max_retries:
                     logger.error(
                         f"Outlook warmup failed after {max_retries} attempts: {e}"
                     )
+                    logger.error(f"Full traceback:\n{''.join(tb.format_exc())}")
                     raise Exception(
                         f"Outlook warmup failed after {max_retries} attempts: {e}"
                     ) from e
@@ -76,20 +85,33 @@ async def outlook_lifespan(app):
 
         # Set module-level bridge state for tools to access
         # Import here to avoid circular imports
-        from mailtool.mcp import server
+        import mailtool.mcp.server as server_module
 
-        server._bridge = bridge
+        # Use setattr to ensure we're setting the module-level variable correctly
+        # This modifies the module's __dict__ directly to ensure _get_bridge() sees it
+        setattr(server_module, "_bridge", bridge)
+        logger.info(f"Bridge set via setattr: {server_module._bridge is not None}")
 
         # Set bridge in resources module for resource access
         from mailtool.mcp import resources
 
         resources._set_bridge(bridge)
-
         logger.info("Outlook bridge initialized and ready")
+        logger.error("=" * 60)
+        logger.error("LIFESPAN: Bridge initialization complete, yielding to server")
+        logger.error("=" * 60)
 
         # Yield for server to start
         yield
 
+    except Exception as e:
+        # Log any unexpected errors during lifespan startup
+        logger.error("=" * 60)
+        logger.error("LIFESPAN: Unexpected error during startup")
+        logger.error(f"Error: {type(e).__name__}: {e}")
+        logger.error(f"Full traceback:\n{''.join(tb.format_exc())}")
+        logger.error("=" * 60)
+        raise
     finally:
         # Cleanup: Release COM objects, uninitialize COM, and force garbage collection
         logger.info("Shutting down Outlook bridge...")
