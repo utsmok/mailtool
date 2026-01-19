@@ -108,7 +108,9 @@ class PerformanceBenchmark:
         """Clean up after benchmarking"""
         if self.bridge:
             print("Cleaning up Outlook bridge...")
-            self.bridge.cleanup()
+            # Release COM references
+            self.bridge.outlook = None
+            self.bridge.namespace = None
             self.bridge = None
             gc.collect()
             print("Cleanup complete\n")
@@ -195,6 +197,9 @@ class PerformanceBenchmark:
 
         try:
             self.setup()
+
+            # Type guard: bridge is guaranteed to be set after setup()
+            assert self.bridge is not None, "Bridge should be initialized after setup()"
 
             # Benchmark 1: List emails (small folder)
             results.append(

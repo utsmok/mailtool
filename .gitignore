@@ -16,3 +16,7 @@ codefetch/
 # Temporary files
 *.tmp
 *.bypass
+
+# Python caches
+.pytest_cache/
+.ruff_cache/
