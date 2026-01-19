@@ -8,7 +8,10 @@ Email resources:
 - inbox://unread - List unread emails from inbox
 - email://{entry_id} - Get full email details by entry ID (template resource)
 
-Calendar resources will be added in US-028
+Calendar resources:
+- calendar://today - List today's calendar events
+- calendar://week - List calendar events for the next 7 days
+
 Task resources will be added in US-033
 """
 
@@ -16,7 +19,12 @@ from typing import TYPE_CHECKING
 
 from mcp.server import FastMCP
 
-from mailtool.mcp.models import EmailDetails, EmailSummary
+from mailtool.mcp.models import (
+    AppointmentDetails,
+    AppointmentSummary,
+    EmailDetails,
+    EmailSummary,
+)
 
 if TYPE_CHECKING:
     from mailtool.bridge import OutlookBridge
@@ -274,3 +282,158 @@ def register_email_resources(mcp: FastMCP) -> None:
 
         # Format as text
         return _format_email_details(email)
+
+
+def _format_appointment_summary(appt: AppointmentSummary) -> str:
+    """Format an appointment summary as readable text.
+
+    Args:
+        appt: AppointmentSummary model
+
+    Returns:
+        Formatted text representation
+    """
+    return f"""Subject: {appt.subject}
+Start: {appt.start}
+End: {appt.end}
+Location: {appt.location or "No location"}
+Organizer: {appt.organizer or "Unknown"}
+All Day: {"Yes" if appt.all_day else "No"}
+Required Attendees: {appt.required_attendees or "None"}
+Optional Attendees: {appt.optional_attendees or "None"}
+Response Status: {appt.response_status or "N/A"}
+Meeting Status: {appt.meeting_status or "N/A"}
+Entry ID: {appt.entry_id}
+"""
+
+
+def _format_appointment_details(appt: AppointmentDetails) -> str:
+    """Format full appointment details as readable text.
+
+    Args:
+        appt: AppointmentDetails model
+
+    Returns:
+        Formatted text representation with body
+    """
+    return f"""Subject: {appt.subject}
+Start: {appt.start}
+End: {appt.end}
+Location: {appt.location or "No location"}
+Organizer: {appt.organizer or "Unknown"}
+All Day: {"Yes" if appt.all_day else "No"}
+Required Attendees: {appt.required_attendees or "None"}
+Optional Attendees: {appt.optional_attendees or "None"}
+Response Status: {appt.response_status or "N/A"}
+Meeting Status: {appt.meeting_status or "N/A"}
+Entry ID: {appt.entry_id}
+
+Body:
+{appt.body or "No body text"}
+"""
+
+
+def register_calendar_resources(mcp: FastMCP) -> None:
+    """Register all calendar resources with the FastMCP server.
+
+    Args:
+        mcp: FastMCP server instance
+
+    This function registers two calendar resources:
+    1. calendar://today - Lists today's calendar events
+    2. calendar://week - Lists calendar events for the next 7 days
+    """
+
+    @mcp.resource(
+        uri="calendar://today",
+        name="calendar_today",
+        title="Today's Calendar",
+        description="List calendar events for today",
+    )
+    def calendar_today() -> str:
+        """Get today's calendar events.
+
+        Returns:
+            Formatted text with appointment summaries
+        """
+        bridge = _get_bridge()
+
+        # Get today's events from bridge (days=1)
+        events_data = bridge.list_calendar_events(days=1)
+
+        # Convert to AppointmentSummary models
+        events = [
+            AppointmentSummary(
+                entry_id=event["entry_id"],
+                subject=event["subject"],
+                start=event["start"],
+                end=event["end"],
+                location=event["location"],
+                organizer=event["organizer"],
+                all_day=event["all_day"],
+                required_attendees=event["required_attendees"],
+                optional_attendees=event["optional_attendees"],
+                response_status=event["response_status"],
+                meeting_status=event["meeting_status"],
+                response_requested=event["response_requested"],
+            )
+            for event in events_data
+        ]
+
+        # Format as text
+        if not events:
+            return "No calendar events for today"
+
+        lines = [f"Today's Calendar ({len(events)} events)", ""]
+        for event in events:
+            lines.append(_format_appointment_summary(event))
+            lines.append("-" * 60)
+
+        return "\n".join(lines)
+
+    @mcp.resource(
+        uri="calendar://week",
+        name="calendar_week",
+        title="Week's Calendar",
+        description="List calendar events for the next 7 days",
+    )
+    def calendar_week() -> str:
+        """Get calendar events for the next 7 days.
+
+        Returns:
+            Formatted text with appointment summaries
+        """
+        bridge = _get_bridge()
+
+        # Get this week's events from bridge (days=7)
+        events_data = bridge.list_calendar_events(days=7)
+
+        # Convert to AppointmentSummary models
+        events = [
+            AppointmentSummary(
+                entry_id=event["entry_id"],
+                subject=event["subject"],
+                start=event["start"],
+                end=event["end"],
+                location=event["location"],
+                organizer=event["organizer"],
+                all_day=event["all_day"],
+                required_attendees=event["required_attendees"],
+                optional_attendees=event["optional_attendees"],
+                response_status=event["response_status"],
+                meeting_status=event["meeting_status"],
+                response_requested=event["response_requested"],
+            )
+            for event in events_data
+        ]
+
+        # Format as text
+        if not events:
+            return "No calendar events for the next 7 days"
+
+        lines = [f"Week's Calendar ({len(events)} events)", ""]
+        for event in events:
+            lines.append(_format_appointment_summary(event))
+            lines.append("-" * 60)
+
+        return "\n".join(lines)

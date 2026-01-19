@@ -225,7 +225,7 @@
       "title": "Implement calendar resources",
       "description": "Create register_calendar_resources() function in resources.py, register calendar://today and calendar://week resources using @mcp.resource() decorator",
       "priority": 28,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {
