@@ -860,3 +860,78 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Pre-commit bypass required for pywin32 type checking (expected in dev environment)
   - All Phase 6 custom exceptions now complete: US-037
   - Next: US-038 (logging) - add logging configuration to MCP server
+
+## 2025-01-19 06:30 - US-038: Add logging to MCP server
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added logging configuration to server.py with logger instance
+- Added error logging to _get_bridge() when bridge not initialized
+- Added debug logging to _get_bridge() when bridge retrieved successfully
+- Added error logging to get_email, get_appointment, get_task when items not found
+- Added debug logging to get_email, get_appointment, get_task when items found
+- Added logging configuration to lifespan.py with logger instance
+- Added info logging for bridge lifecycle events:
+  - "Initializing Outlook bridge..." on startup
+  - "Outlook bridge created successfully" after bridge creation
+  - "Outlook bridge warmed up successfully" after warmup
+  - "Outlook bridge initialized and ready" before yielding
+  - "Shutting down Outlook bridge..." on shutdown
+  - "Outlook bridge shutdown complete" after cleanup
+- Added debug logging for warmup attempts with attempt number
+- Added warning logging for warmup retry attempts with exception details
+- Added error logging for warmup failures after max retries
+- Added error logging for COM reference cleanup errors
+- Added debug logging for inbox item count during warmup
+- All logs written to stderr for debugging and monitoring
+- Reorganized imports in server.py to fix ruff E402 errors (module level imports not at top)
+- All code passes ruff linting and formatting checks
+- All 43 Pydantic model tests still passing
+- Committed: feat(mcp): US-038 - Add logging to MCP server
+- Files changed: src/mailtool/mcp/server.py, src/mailtool/mcp/lifespan.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Use logging.getLogger(__name__) to create module-level logger instances
+  - Logs are written to stderr by default for MCP servers (stdio transport used for MCP protocol)
+  - Info level logs for major lifecycle events (initialization, warmup, shutdown)
+  - Debug level logs for operational details (retrieving items, warmup attempts, inbox counts)
+  - Warning level logs for retry attempts (warmup failures that will be retried)
+  - Error level logs for failures (bridge not initialized, items not found, warmup failures after max retries, cleanup errors)
+  - Import order matters: all imports must be at top of file (ruff E402 rule)
+  - Logging doesn't require additional dependencies (built-in Python logging module)
+  - Logging is essential for debugging MCP server issues in production
+  - Pre-commit bypass not needed (ruff checks passed without pywin32 issues)
+  - All Phase 6 logging implementation now complete: US-038
+  - Next: US-039 (update README.md) - documentation updates
+
+## 2025-01-19 06:45 - US-039: Update README.md and MCP_INTEGRATION.md
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Updated README.md with MCP SDK v2 and FastMCP framework documentation
+- Added version 2.3.0 branding to MCP integration section
+- Added key features section highlighting 23 tools, 7 resources, structured output, type safety, error handling, and logging
+- Updated project structure to reflect new src/mailtool/mcp/ package with 5 modules
+- Added MCP server architecture diagram with FastMCP server and async context manager
+- Added key improvements from v2.2 section listing SDK v2 features
+- Updated advantages section to include official MCP SDK v2, structured output, and resources
+- Updated limitations section to be more accurate about MCP server requirements
+- Updated development section with MCP server development subsection
+- Updated MCP_INTEGRATION.md with SDK v2 patterns and version 2.3.0 branding
+- Added features section listing 23 tools, 7 resources, and key SDK v2 features
+- Updated tool catalog with function signatures and return types
+- Added resources documentation with 7 resources (email, calendar, task)
+- Updated architecture section with FastMCP framework and async lifespan manager
+- Added key SDK v2 features subsection (FastMCP, Pydantic models, structured output, async lifespan, custom exceptions, resources)
+- Added project structure subsection documenting 5 MCP modules
+- Added testing instructions for MCP server and tests
+- Added adding new tools subsection with code example
+- Added code patterns subsection (tool definition, resource definition, exception pattern)
+- All 43 Pydantic model tests still passing
+- Committed: feat(mcp): US-039 - Update README.md and MCP_INTEGRATION.md
+- Files changed: README.md, MCP_INTEGRATION.md, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - Documentation updates should include version branding (v2.3.0) to help users track changes
+  - Tool catalog with function signatures and return types helps users understand tool capabilities
+  - Resources documentation is important for quick data access patterns
+  - Code patterns subsection helps developers add new tools/resources
+  - Architecture diagram helps users understand the data flow (Claude Code → FastMCP → COM Bridge → Outlook)
+  - Key improvements section helps users understand what changed from v2.2 to v2.3
+  - Ruff doesn't support markdown linting (expected behavior, not an error)
+  - All Phase 6 documentation updates now complete: US-039
+  - Next: US-040 (update CLAUDE.md) - architecture patterns and development workflow
