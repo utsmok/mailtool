@@ -835,7 +835,10 @@ class OutlookBridge:
             task.Subject = subject
             task.Body = body
             if due_date:
-                task.DueDate = datetime.strptime(due_date, "%Y-%m-%d")
+                # Use noon to avoid timezone boundary issues
+                task.DueDate = datetime.strptime(
+                    f"{due_date} 12:00:00", "%Y-%m-%d %H:%M:%S"
+                )
             task.Importance = importance
             task.Save()
             return task.EntryID
@@ -911,7 +914,10 @@ class OutlookBridge:
                 if body is not None:
                     item.Body = body
                 if due_date:
-                    item.DueDate = datetime.strptime(due_date, "%Y-%m-%d")
+                    # Use noon to avoid timezone boundary issues
+                    item.DueDate = datetime.strptime(
+                        f"{due_date} 12:00:00", "%Y-%m-%d %H:%M:%S"
+                    )
                 if importance is not None:
                     item.Importance = importance
                 if percent_complete is not None:

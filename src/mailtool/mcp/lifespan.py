@@ -40,7 +40,6 @@ async def outlook_lifespan(app):
     Raises:
         Exception: If Outlook cannot be connected to after retry attempts
     """
-    import sys
     import traceback as tb
 
     bridge = None
@@ -71,7 +70,9 @@ async def outlook_lifespan(app):
                 break  # Success - exit retry loop
             except Exception as e:
                 logger.warning(f"Warmup attempt {attempt}/{max_retries} failed: {e}")
-                logger.error(f"Exception traceback:\n{''.join(tb.format_exception(type(e), e, e.__traceback__))}")
+                logger.error(
+                    f"Exception traceback:\n{''.join(tb.format_exception(type(e), e, e.__traceback__))}"
+                )
                 if attempt == max_retries:
                     logger.error(
                         f"Outlook warmup failed after {max_retries} attempts: {e}"
@@ -89,7 +90,7 @@ async def outlook_lifespan(app):
 
         # Use setattr to ensure we're setting the module-level variable correctly
         # This modifies the module's __dict__ directly to ensure _get_bridge() sees it
-        setattr(server_module, "_bridge", bridge)
+        server_module._bridge = bridge
         logger.info(f"Bridge set via setattr: {server_module._bridge is not None}")
 
         # Set bridge in resources module for resource access

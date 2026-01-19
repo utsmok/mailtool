@@ -325,7 +325,7 @@ def main() -> None:
     del_task_parser = subparsers.add_parser("delete-task", help="Delete a task")
     del_task_parser.add_argument("--id", required=True, help="Task entry ID")
 
-    mcp_parser = subparsers.add_parser("mcp", help="Start the MCP server")
+    subparsers.add_parser("mcp", help="Start the MCP server")
 
     args = parser.parse_args()
 
