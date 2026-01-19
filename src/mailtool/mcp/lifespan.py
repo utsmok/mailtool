@@ -63,6 +63,11 @@ async def outlook_lifespan(app):
 
         server._bridge = bridge
 
+        # Set bridge in resources module for resource access
+        from mailtool.mcp import resources
+
+        resources._set_bridge(bridge)
+
         # Yield for server to start
         yield
 

@@ -22,6 +22,7 @@ from mailtool.mcp.models import (
     SendEmailResult,
     TaskSummary,
 )
+from mailtool.mcp.resources import register_email_resources
 
 if TYPE_CHECKING:
     from mailtool.bridge import OutlookBridge
@@ -32,6 +33,10 @@ mcp = FastMCP(
     name="mailtool-outlook-bridge",
     lifespan=outlook_lifespan,
 )
+
+# Register email resources (US-022)
+# Calendar and task resources will be added in US-028 and US-033
+register_email_resources(mcp)
 
 # Module-level bridge instance (set by lifespan, accessed by tools)
 _bridge: "OutlookBridge | None" = None
