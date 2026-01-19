@@ -168,7 +168,7 @@ def delete_email(entry_id: str) -> OperationResult:
 
 
 # ============================================================================
-# Calendar Tools (US-009: get_appointment)
+# Calendar Tools (US-009: get_appointment, US-014: delete_appointment)
 # ============================================================================
 
 
@@ -216,6 +216,41 @@ def get_appointment(entry_id: str) -> AppointmentDetails:
         meeting_status=result["meeting_status"],
         response_requested=result["response_requested"],
     )
+
+
+@mcp.tool()
+def delete_appointment(entry_id: str) -> OperationResult:
+    """
+    Delete an appointment.
+
+    Permanently deletes an appointment using O(1) direct access via EntryID.
+
+    Args:
+        entry_id: Outlook EntryID of the appointment (O(1) direct access)
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Delete appointment via bridge
+    result = bridge.delete_appointment(entry_id)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message="Appointment deleted successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message="Failed to delete appointment",
+        )
 
 
 # ============================================================================
