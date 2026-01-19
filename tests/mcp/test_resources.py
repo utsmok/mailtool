@@ -444,8 +444,10 @@ class TestBridgeState:
 
     def test_set_and_get_bridge(self, mock_bridge):
         """Test setting and getting bridge instance"""
+        from mailtool.mcp.exceptions import OutlookComError
+
         # Initially None
-        with pytest.raises(RuntimeError, match="Outlook bridge not initialized"):
+        with pytest.raises(OutlookComError, match="Outlook bridge not initialized"):
             resources._get_bridge()
 
         # Set bridge
@@ -460,10 +462,12 @@ class TestBridgeState:
 
     def test_get_bridge_not_initialized(self):
         """Test get_bridge raises error when not initialized"""
+        from mailtool.mcp.exceptions import OutlookComError
+
         # Ensure bridge is None
         resources._set_bridge(None)
 
-        with pytest.raises(RuntimeError, match="Outlook bridge not initialized"):
+        with pytest.raises(OutlookComError, match="Outlook bridge not initialized"):
             resources._get_bridge()
 
 

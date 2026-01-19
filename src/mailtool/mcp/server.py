@@ -10,9 +10,9 @@ All tools return structured Pydantic models for type safety and LLM understandin
 
 from typing import TYPE_CHECKING
 
-from mcp import McpError
 from mcp.server import FastMCP
 
+from mailtool.mcp.exceptions import OutlookComError, OutlookNotFoundError
 from mailtool.mcp.lifespan import outlook_lifespan
 from mailtool.mcp.models import (
     AppointmentDetails,
@@ -58,11 +58,13 @@ def _get_bridge():
         OutlookBridge: The bridge instance
 
     Raises:
-        McpError: If bridge is not initialized (server not running)
+        OutlookComError: If bridge is not initialized (server not running)
     """
     global _bridge
     if _bridge is None:
-        raise McpError("Outlook bridge not initialized. Is the server running?")
+        raise OutlookComError(
+            "Outlook bridge not initialized. Is the server running?"
+        )
     return _bridge
 
 
@@ -87,7 +89,7 @@ def list_emails(limit: int = 10, folder: str = "Inbox") -> list[EmailSummary]:
         list[EmailSummary]: List of email summaries with basic information
 
     Raises:
-        McpError: If bridge is not initialized or folder cannot be accessed
+        OutlookComError: If bridge is not initialized or folder cannot be accessed
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -125,7 +127,8 @@ def get_email(entry_id: str) -> EmailDetails:
         EmailDetails: Complete email details including body content
 
     Raises:
-        McpError: If email not found or cannot be accessed
+        OutlookNotFoundError: If email not found
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -135,7 +138,7 @@ def get_email(entry_id: str) -> EmailDetails:
 
     # Check if email was found
     if result is None:
-        raise McpError(f"Email not found: {entry_id}")
+        raise OutlookNotFoundError("Email not found", entry_id=entry_id)
 
     # Convert bridge result to EmailDetails model
     # Note: EmailDetails doesn't have 'unread' field (bridge.get_email_body doesn't return it)
@@ -166,7 +169,7 @@ def mark_email(entry_id: str, unread: bool = False) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -201,7 +204,7 @@ def delete_email(entry_id: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -253,7 +256,7 @@ def send_email(
         SendEmailResult: Result with success status, draft entry ID (if saved), and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -309,7 +312,7 @@ def reply_email(entry_id: str, body: str, reply_all: bool = False) -> OperationR
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -347,7 +350,7 @@ def forward_email(entry_id: str, to: str, body: str = "") -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -383,7 +386,7 @@ def move_email(entry_id: str, folder: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -420,7 +423,7 @@ def search_emails(filter_query: str, limit: int = 100) -> list[EmailSummary]:
         list[EmailSummary]: List of matching email summaries
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
 
     Examples:
         search_emails("[Subject] LIKE '%project%'")  # Search by subject
@@ -472,7 +475,7 @@ def list_calendar_events(
         list[AppointmentSummary]: List of appointment summaries with basic information
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
 
     Note:
         This function handles the "Calendar Bomb" issue by applying COM-level
@@ -519,7 +522,8 @@ def get_appointment(entry_id: str) -> AppointmentDetails:
         AppointmentDetails: Complete appointment details including body content
 
     Raises:
-        McpError: If appointment not found or cannot be accessed
+        OutlookNotFoundError: If appointment not found
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -529,7 +533,7 @@ def get_appointment(entry_id: str) -> AppointmentDetails:
 
     # Check if appointment was found
     if result is None:
-        raise McpError(f"Appointment not found: {entry_id}")
+        raise OutlookNotFoundError("Appointment not found", entry_id=entry_id)
 
     # Convert bridge result to AppointmentDetails model
     # Note: AppointmentDetails extends AppointmentSummary, adding 'body' field
@@ -564,7 +568,7 @@ def delete_appointment(entry_id: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -616,7 +620,7 @@ def create_appointment(
         CreateAppointmentResult: Result with success status, appointment entry ID (if created), and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -680,7 +684,7 @@ def edit_appointment(
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -726,7 +730,7 @@ def respond_to_meeting(entry_id: str, response: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -768,7 +772,7 @@ def get_free_busy(
         FreeBusyInfo: Free/busy information with email, dates, status string, and resolution status
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
 
     Note:
         Free/busy status codes: 0=Free, 1=Tentative, 2=Busy, 3=Out of Office, 4=Working Elsewhere
@@ -815,7 +819,7 @@ def list_tasks(include_completed: bool = False) -> list[TaskSummary]:
         list[TaskSummary]: List of task summaries with basic information
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -852,7 +856,7 @@ def list_all_tasks() -> list[TaskSummary]:
         list[TaskSummary]: List of all task summaries with basic information
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -891,7 +895,8 @@ def get_task(entry_id: str) -> TaskSummary:
         TaskSummary: Complete task details including body content
 
     Raises:
-        McpError: If task not found or cannot be accessed
+        OutlookNotFoundError: If task not found
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -901,7 +906,7 @@ def get_task(entry_id: str) -> TaskSummary:
 
     # Check if task was found
     if result is None:
-        raise McpError(f"Task not found: {entry_id}")
+        raise OutlookNotFoundError("Task not found", entry_id=entry_id)
 
     # Convert bridge result to TaskSummary model
     # Note: TaskSummary includes all fields from bridge.get_task()
@@ -932,7 +937,7 @@ def complete_task(entry_id: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -967,7 +972,7 @@ def delete_task(entry_id: str) -> OperationResult:
         OperationResult: Result of the operation with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -1011,7 +1016,7 @@ def create_task(
         CreateTaskResult: Result with success status, task entry ID (if created), and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()
@@ -1071,7 +1076,7 @@ def edit_task(
         OperationResult: Result with success status and message
 
     Raises:
-        McpError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     # Get bridge from module-level state
     bridge = _get_bridge()

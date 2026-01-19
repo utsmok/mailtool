@@ -550,8 +550,10 @@ class TestResourceQueries:
         assert current_bridge is not None
 
         # Set None and verify that _get_bridge raises an error
+        from mailtool.mcp.exceptions import OutlookComError
+
         resources._set_bridge(None)
-        with pytest.raises(RuntimeError, match="not initialized"):
+        with pytest.raises(OutlookComError, match="not initialized"):
             resources._get_bridge()
 
         # Restore bridge

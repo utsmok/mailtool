@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 
 from mcp.server import FastMCP
 
+from mailtool.mcp.exceptions import OutlookComError
 from mailtool.mcp.models import (
     AppointmentDetails,
     AppointmentSummary,
@@ -43,11 +44,11 @@ def _get_bridge() -> "OutlookBridge":
         OutlookBridge: The bridge instance
 
     Raises:
-        RuntimeError: If bridge is not initialized
+        OutlookComError: If bridge is not initialized
     """
     global _bridge
     if _bridge is None:
-        raise RuntimeError("Outlook bridge not initialized")
+        raise OutlookComError("Outlook bridge not initialized")
     return _bridge
 
 
@@ -261,7 +262,7 @@ def register_email_resources(mcp: FastMCP) -> None:
             Formatted text with full email details including body
 
         Raises:
-            RuntimeError: If email not found
+            OutlookComError: If bridge is not initialized
         """
         bridge = _get_bridge()
 
