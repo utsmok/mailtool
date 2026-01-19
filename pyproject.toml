@@ -34,6 +34,9 @@ mailtool = "mailtool.cli:main"
 # Development dependencies (new format replacing deprecated [tool.uv.dev-dependencies])
 [dependency-groups]
 dev = [
+    # Pytest: Fast and powerful testing framework
+    "pytest>=9.0.0",
+
     # Ruff: Extremely fast Python linter and code formatter
     # Replaces Flake8, Black, isort, pydocstyle, pyupgrade, autoflake
     "ruff>=0.9.0",
