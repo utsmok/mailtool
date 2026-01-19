@@ -3,9 +3,15 @@
     "command": "uv",
     "args": [
       "run",
-      "mcp",
-      "run",
-      "src/mailtool/mcp/server.py"
-    ]
+      "--with",
+      "pywin32:mcp",
+      "--directory",
+      "${CLAUDE_PLUGIN_ROOT}",
+      "-m",
+      "mailtool.mcp.server"
+    ],
+    "env": {
+      "PYTHONUNBUFFERED": "1"
+    }
   }
 }
