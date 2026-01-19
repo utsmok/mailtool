@@ -137,7 +137,7 @@
       "title": "Implement send_email tool",
       "description": "Migrate send_email tool to use FastMCP @mcp.tool() decorator, return SendEmailResult model, handle to, subject, body, cc, bcc, html_body, file_paths, save_draft parameters, handle three return types (False, True, EntryID string)",
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {

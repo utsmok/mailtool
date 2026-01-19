@@ -19,6 +19,7 @@ from mailtool.mcp.models import (
     EmailDetails,
     EmailSummary,
     OperationResult,
+    SendEmailResult,
     TaskSummary,
 )
 
@@ -52,7 +53,7 @@ def _get_bridge():
 
 
 # ============================================================================
-# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails)
+# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails, US-017: send_email)
 # ============================================================================
 
 
@@ -204,6 +205,76 @@ def delete_email(entry_id: str) -> OperationResult:
         return OperationResult(
             success=False,
             message="Failed to delete email",
+        )
+
+
+@mcp.tool()
+def send_email(
+    to: str,
+    subject: str,
+    body: str,
+    cc: str | None = None,
+    bcc: str | None = None,
+    html_body: str | None = None,
+    file_paths: list[str] | None = None,
+    save_draft: bool = False,
+) -> SendEmailResult:
+    """
+    Send an email or save it as a draft.
+
+    Creates and sends an email, or saves it to the Drafts folder.
+    Supports attachments, CC/BCC recipients, and HTML body.
+
+    Args:
+        to: Primary recipient email address
+        subject: Email subject line
+        body: Plain text email body
+        cc: CC recipients (optional)
+        bcc: BCC recipients (optional)
+        html_body: HTML email body (optional, overrides plain text body if provided)
+        file_paths: List of file paths to attach (optional)
+        save_draft: If True, save to Drafts instead of sending (default: False)
+
+    Returns:
+        SendEmailResult: Result with success status, draft entry ID (if saved), and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Send email via bridge
+    result = bridge.send_email(
+        to=to,
+        subject=subject,
+        body=body,
+        cc=cc,
+        bcc=bcc,
+        html_body=html_body,
+        file_paths=file_paths,
+        save_draft=save_draft,
+    )
+
+    # Convert bridge result to SendEmailResult
+    # Bridge returns: False (failed), True (sent), str (draft EntryID)
+    if result is False:
+        return SendEmailResult(
+            success=False,
+            entry_id=None,
+            message="Failed to send email",
+        )
+    elif result is True:
+        return SendEmailResult(
+            success=True,
+            entry_id=None,
+            message="Email sent successfully",
+        )
+    else:  # str - draft EntryID
+        return SendEmailResult(
+            success=True,
+            entry_id=result,
+            message=f"Email saved as draft: {result}",
         )
 
 
