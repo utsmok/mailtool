@@ -249,7 +249,7 @@
       "title": "Implement create_task tool",
       "description": "Migrate create_task tool to use FastMCP @mcp.tool() decorator, return CreateTaskResult model, handle subject, body, due_date, priority parameters",
       "priority": 31,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {

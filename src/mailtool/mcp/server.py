@@ -4,7 +4,7 @@ This module provides the main FastMCP server instance for Outlook automation.
 It implements the Model Context Protocol (MCP) using the official MCP Python SDK v2
 with the FastMCP framework.
 
-The server provides 21 tools and 5 resources for Outlook email, calendar, and task management.
+The server provides 22 tools and 5 resources for Outlook email, calendar, and task management.
 All tools return structured Pydantic models for type safety and LLM understanding.
 """
 
@@ -18,6 +18,7 @@ from mailtool.mcp.models import (
     AppointmentDetails,
     AppointmentSummary,
     CreateAppointmentResult,
+    CreateTaskResult,
     EmailDetails,
     EmailSummary,
     FreeBusyInfo,
@@ -980,6 +981,59 @@ def delete_task(entry_id: str) -> OperationResult:
         return OperationResult(
             success=False,
             message="Failed to delete task",
+        )
+
+
+@mcp.tool()
+def create_task(
+    subject: str,
+    body: str = "",
+    due_date: str | None = None,
+    priority: int = 1,
+) -> CreateTaskResult:
+    """
+    Create a new task.
+
+    Creates a new task in the Outlook Tasks folder.
+    Supports task description, due date, and priority level.
+
+    Args:
+        subject: Task subject/title
+        body: Task description or body text (default: "")
+        due_date: Due date in 'YYYY-MM-DD' format (optional)
+        priority: Task priority - 0=Low, 1=Normal (default), 2=High
+
+    Returns:
+        CreateTaskResult: Result with success status, task entry ID (if created), and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Create task via bridge
+    # Note: bridge parameter is 'importance', not 'priority'
+    result = bridge.create_task(
+        subject=subject,
+        body=body,
+        due_date=due_date,
+        importance=priority,
+    )
+
+    # Convert bridge result to CreateTaskResult
+    # Bridge returns: str (EntryID) if successful, None if failed
+    if result:
+        return CreateTaskResult(
+            success=True,
+            entry_id=result,
+            message=f"Task created successfully: {result}",
+        )
+    else:
+        return CreateTaskResult(
+            success=False,
+            entry_id=None,
+            message="Failed to create task",
         )
 
 

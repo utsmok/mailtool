@@ -14,19 +14,30 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 def test_lifespan_structure():
     """Test that lifespan structure is correct (without actual COM calls)"""
-    from mailtool.mcp.lifespan import OutlookContext, outlook_lifespan, _create_bridge, _warmup_bridge
+    from mailtool.mcp.lifespan import (
+        OutlookContext,
+        _create_bridge,
+        _warmup_bridge,
+        outlook_lifespan,
+    )
 
     print("Testing lifespan structure...")
 
     # Test that OutlookContext is a dataclass
-    assert hasattr(OutlookContext, '__dataclass_fields__'), "OutlookContext should be a dataclass"
+    assert hasattr(OutlookContext, "__dataclass_fields__"), (
+        "OutlookContext should be a dataclass"
+    )
     print("[OK] OutlookContext is a dataclass")
 
     # Test that outlook_lifespan is decorated with asynccontextmanager
     # The decorator wraps it, so check for __aenter__ and __aexit__ on the result
     import contextlib
-    assert isinstance(outlook_lifespan, contextlib.AbstractAsyncContextManager) or hasattr(outlook_lifespan, '__wrapped__'), \
+
+    assert isinstance(
+        outlook_lifespan, contextlib.AbstractAsyncContextManager
+    ) or hasattr(outlook_lifespan, "__wrapped__"), (
         "outlook_lifespan should be an async context manager"
+    )
     print("[OK] outlook_lifespan is an async context manager")
 
     # Test that helper functions exist and are callable
@@ -35,11 +46,11 @@ def test_lifespan_structure():
     print("[OK] Helper functions are defined")
 
     # Test function signatures
-    import asyncio
-    from contextlib import asynccontextmanager
 
     # Verify outlook_lifespan has the asynccontextmanager decorator
-    assert hasattr(outlook_lifespan, '__wrapped__'), "outlook_lifespan should be decorated"
+    assert hasattr(outlook_lifespan, "__wrapped__"), (
+        "outlook_lifespan should be decorated"
+    )
     print("[OK] outlook_lifespan has asynccontextmanager decorator")
 
     print("\nAll structure tests passed!")
@@ -50,8 +61,9 @@ def test_imports():
     """Test that all imports work correctly"""
     print("\nTesting imports...")
     from mailtool.mcp import lifespan
-    assert hasattr(lifespan, 'OutlookContext')
-    assert hasattr(lifespan, 'outlook_lifespan')
+
+    assert hasattr(lifespan, "OutlookContext")
+    assert hasattr(lifespan, "outlook_lifespan")
     print("[OK] All imports successful")
 
 
