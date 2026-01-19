@@ -935,3 +935,48 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Ruff doesn't support markdown linting (expected behavior, not an error)
   - All Phase 6 documentation updates now complete: US-039
   - Next: US-040 (update CLAUDE.md) - architecture patterns and development workflow
+## 2025-01-19 07:00 - US-040: Update CLAUDE.md
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Updated CLAUDE.md with MCP SDK v2 architecture patterns and FastMCP framework documentation
+- Updated version from 2.2.0 to 2.3.0
+- Updated file structure to reflect new src/mailtool/mcp/ package with 5 modules (server, models, resources, lifespan, exceptions)
+- Updated MCP server entry point from mcp_server.py to src/mailtool/mcp/server.py
+- Added comprehensive MCP SDK v2 Architecture section with:
+  - FastMCP Framework overview
+  - FastMCP Decorator Pattern with code example
+  - Pydantic Models documentation (10 models: Email, Calendar, Task)
+  - MCP Resources documentation (7 resources: email, calendar, task)
+  - Lifespan Management with async context manager code example
+  - Custom Exceptions with code examples (OutlookNotFoundError, OutlookComError, OutlookValidationError)
+- Updated Recent Changes section:
+  - Added v2.3.0 (Current - MCP SDK v2 Migration) with 10 key improvements
+  - Moved v2.2.0 to Previous section
+- Updated Available MCP Tools section to include all 23 tools
+- Added Available MCP Resources section documenting all 7 resources
+- Updated Development Workflow section with MCP server testing commands:
+  - Run all MCP tests: uv run --with pytest --with pywin32 python -m pytest tests/mcp/ -v
+  - Run specific test modules with individual commands
+  - Test MCP server manually: uv run --with mcp --with pywin32 python -m mailtool.mcp.server
+- Updated Architecture Patterns section with 6 new subsections:
+  - MCP Server (FastMCP framework, structured output, module-level bridge pattern)
+  - MCP Models (Pydantic models for type safety, LLM understanding)
+  - MCP Resources (read-only data access via custom URI schemes)
+  - MCP Lifespan (async context manager for Outlook bridge lifecycle)
+  - MCP Exceptions (3 custom exception types with error codes)
+- All 43 Pydantic model tests still passing
+- Ruff doesn't support markdown linting (expected behavior, not an error)
+- Committed: feat: US-040 - Update CLAUDE.md with MCP SDK v2 architecture patterns
+- Files changed: CLAUDE.md, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - CLAUDE.md is the primary AI assistant guide - should be comprehensive and detailed
+  - Architecture patterns section should include code examples for better understanding
+  - Documentation should include version branding (v2.3.0) to help track changes
+  - Pydantic models documentation helps developers understand structured output
+  - MCP resources documentation is important for read-only data access patterns
+  - Development workflow should include testing commands for MCP server
+  - Module-level bridge pattern is key to FastMCP dependency injection
+  - Async lifespan management is critical for COM bridge lifecycle
+  - Custom exception classes provide structured error handling for MCP clients
+  - FastMCP decorator pattern is simpler than hand-rolled MCP implementation
+  - All Phase 6 documentation updates now complete: US-039, US-040
+  - Next: US-041 (update MCP_INTEGRATION.md) - tool catalog and resources documentation
