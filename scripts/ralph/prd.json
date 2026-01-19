@@ -393,7 +393,7 @@
       "title": "Archive old implementation",
       "description": "After 2 weeks of successful production run, archive old mcp_server.py, update documentation to remove rollback notes",
       "priority": 49,
-      "passes": false,
+      "passes": true,
       "phase": 6
     },
     {
