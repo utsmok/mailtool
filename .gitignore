@@ -1,3 +1,16 @@
 __pycache__/
 *.json
 .venv/
+
+# Development scripts
+gather_daily_data*.py
+gather_daily_data*.txt
+test_mcp_quick.py
+
+# Claude directories
+.claude/
+codefetch/
+
+# Temporary files
+*.tmp
+*.bypass

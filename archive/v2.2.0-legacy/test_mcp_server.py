@@ -28,10 +28,11 @@ async def test_mcp_server():
     async def send_request(request):
         """Send JSON-RPC request and get response"""
         request_str = json.dumps(request) + "\n"
-        process.stdin.write(request_str)
-        process.stdin.flush()
+        if process.stdin:
+            process.stdin.write(request_str)
+            process.stdin.flush()
 
-        response_line = process.stdout.readline()
+        response_line = process.stdout.readline() if process.stdout else ""
         if not response_line:
             return None
 
@@ -170,7 +171,8 @@ async def test_mcp_server():
     finally:
         # Clean up
         try:
-            process.stdin.close()
+            if process.stdin:
+                process.stdin.close()
             process.terminate()
             process.wait(timeout=5)
         except:
