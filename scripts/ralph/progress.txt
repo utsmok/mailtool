@@ -741,3 +741,35 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Fourth and final Phase 5 task tool complete (all task tools done!)
   - All Phase 5 tools now complete: US-023 through US-032 (10 user stories: 6 calendar + 4 task)
   - Next: US-033 (task resources) - final resource implementation
+## 2025-01-19 05:45 - US-033: Implement task resources
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Created register_task_resources() function in resources.py
+- Registered 2 task resources with FastMCP server:
+  - tasks://active - List active (incomplete) tasks
+  - tasks://all - List all tasks (including completed)
+- Implemented helper function:
+  - _format_task_summary() - Format TaskSummary as readable text with status/priority mapping
+- Added TaskSummary import to resources.py
+- Updated server.py to import and call register_task_resources(mcp)
+- Updated module docstring to reflect 7 resources (was 5)
+- All code passes ruff linting and formatting checks
+- All 43 Pydantic model tests still passing
+- Server now has 23 tools + 7 resources (3 email + 2 calendar + 2 task)
+- Committed: feat(mcp): US-033 - Implement task resources
+- Files changed: src/mailtool/mcp/resources.py, src/mailtool/mcp/server.py, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - Task resources follow same pattern as email and calendar resources (US-022, US-028)
+  - Resources use @mcp.resource(uri="...") decorator, not @mcp.tool()
+  - Resources return formatted text (str), not Pydantic models
+  - Resources are registered separately from tools (register_task_resources(mcp) function)
+  - Task resources use status_map and priority_map to convert codes to human-readable names
+  - Status codes: 0=Not Started, 1=In Progress, 2=Complete, 3=Waiting, 4=Deferred, 5=Other
+  - Priority codes: 0=Low, 1=Normal, 2=High
+  - Bridge.list_tasks(include_completed=False) returns active tasks
+  - Bridge.list_tasks(include_completed=True) returns all tasks
+  - Helper functions for formatting keep resource functions clean
+  - Module-level bridge pattern extends to resources (resources._get_bridge())
+  - All Phase 5 tasks now complete: US-023 through US-033 (11 user stories: 6 calendar + 4 task + 1 resource)
+  - All resource implementations now complete: US-022 (email), US-028 (calendar), US-033 (task)
+  - All Phase 5 (Core Tool & Resource Implementation) is now complete!
+  - Next: US-034 (tool tests) - starts Phase 6 (Testing & Documentation)
