@@ -177,7 +177,7 @@
       "title": "Implement email resources",
       "description": "Create register_email_resources() function in resources.py, register inbox://emails, inbox://unread, and email://{entry_id} resources using @mcp.resource() decorator",
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {
@@ -185,7 +185,7 @@
       "title": "Implement list_calendar_events tool",
       "description": "Migrate list_calendar_events tool to use FastMCP @mcp.tool() decorator, return list[AppointmentSummary], handle days and all parameters",
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {
