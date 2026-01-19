@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from mcp.server import FastMCP
 
+from mailtool.mcp.com_state import ensure_com_initialized
 from mailtool.mcp.exceptions import OutlookComError, OutlookNotFoundError
 from mailtool.mcp.lifespan import outlook_lifespan
 from mailtool.mcp.models import (
@@ -66,6 +67,10 @@ def _get_bridge():
         OutlookComError: If bridge is not initialized (server not running)
     """
     global _bridge
+
+    # Ensure COM is initialized for the current thread before accessing bridge
+    ensure_com_initialized()
+
     if _bridge is None:
         logger.error("Outlook bridge not initialized. Is the server running?")
         raise OutlookComError("Outlook bridge not initialized. Is the server running?")

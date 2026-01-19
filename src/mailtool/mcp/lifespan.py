@@ -26,10 +26,14 @@ async def outlook_lifespan(app):
     """Async context manager for Outlook bridge lifecycle
 
     This function manages the complete lifecycle of the Outlook COM bridge:
-    1. Creates OutlookBridge instance on startup
+    1. Creates OutlookBridge instance on startup (main thread)
     2. Warms up the connection with retry attempts
     3. Sets module-level bridge state for tool access
     4. Cleans up COM objects on shutdown
+
+    CRITICAL: COM objects must be created and accessed from the same thread.
+    The bridge is created directly in the main async context, not in an executor,
+    to ensure thread affinity for all COM calls.
 
     Args:
         app: The FastMCP server instance (used to access module state)
@@ -43,18 +47,24 @@ async def outlook_lifespan(app):
     import traceback as tb
 
     bridge = None
+    com_initialized = False
     try:
         # Log lifespan start (using stderr to ensure visibility)
         logger.error("=" * 60)
         logger.error("LIFESPAN: Starting Outlook bridge initialization")
         logger.error("=" * 60)
 
-        # Create Outlook bridge instance (synchronous COM call)
-        # Note: We run this in a thread pool since COM calls are synchronous
-        loop = asyncio.get_event_loop()
+        # Initialize COM in the main thread BEFORE creating the bridge
+        # This ensures all subsequent COM calls happen from the same thread
+        logger.info("Initializing COM in main thread...")
+        pythoncom.CoInitialize()
+        com_initialized = True
+        logger.debug("COM initialized successfully")
 
+        # Create Outlook bridge instance directly in main thread
+        # NOT in executor - COM objects require thread affinity
         logger.info("Creating Outlook bridge...")
-        bridge = await loop.run_in_executor(None, _create_bridge)
+        bridge = OutlookBridge()
         logger.info("Outlook bridge created successfully")
 
         # Warmup: Test that COM is responsive with retries
@@ -65,7 +75,7 @@ async def outlook_lifespan(app):
             try:
                 logger.debug(f"Warmup attempt {attempt}/{max_retries}")
                 # Run a real COM call to ensure Outlook is responsive
-                await loop.run_in_executor(None, _warmup_bridge, bridge)
+                _warmup_bridge(bridge)
                 logger.info("Outlook bridge warmed up successfully")
                 break  # Success - exit retry loop
             except Exception as e:
@@ -125,34 +135,17 @@ async def outlook_lifespan(app):
             except Exception as e:
                 logger.error(f"Error releasing COM references: {e}")
 
-        # Uninitialize COM for this thread
-        try:
-            pythoncom.CoUninitialize()
-            logger.debug("Uninitialized COM")
-        except Exception as e:
-            logger.error(f"Error uninitializing COM: {e}")
+        # Uninitialize COM for this thread (only if we initialized it)
+        if com_initialized:
+            try:
+                pythoncom.CoUninitialize()
+                logger.debug("Uninitialized COM")
+            except Exception as e:
+                logger.error(f"Error uninitializing COM: {e}")
 
         # Force Python garbage collection to release COM objects
         gc.collect()
         logger.info("Outlook bridge shutdown complete")
-
-
-def _create_bridge() -> OutlookBridge:
-    """Synchronous function to create OutlookBridge instance
-
-    Initializes COM for the current thread before creating the bridge.
-    This is necessary because the bridge is created in a thread pool executor.
-
-    Returns:
-        OutlookBridge: The initialized bridge instance
-
-    Raises:
-        Exception: If Outlook cannot be connected to or launched
-    """
-    logger.debug("Initializing COM for thread")
-    pythoncom.CoInitialize()
-    logger.debug("Creating OutlookBridge instance")
-    return OutlookBridge()
 
 
 def _warmup_bridge(bridge: OutlookBridge) -> None:

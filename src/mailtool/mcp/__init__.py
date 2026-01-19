@@ -9,6 +9,8 @@ Modules:
 - models: Pydantic models for structured output
 - resources: MCP resources for read-only data access
 - lifespan: Outlook bridge lifecycle management
+- com_state: Thread-safe COM initialization tracking
+- exceptions: Custom exception classes for error handling
 """
 
 __version__ = "2.3.0"

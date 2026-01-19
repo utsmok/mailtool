@@ -17,10 +17,12 @@ Task resources:
 - tasks://all - List all tasks (including completed)
 """
 
+import logging
 from typing import TYPE_CHECKING
 
 from mcp.server import FastMCP
 
+from mailtool.mcp.com_state import ensure_com_initialized
 from mailtool.mcp.exceptions import OutlookComError
 from mailtool.mcp.models import (
     AppointmentDetails,
@@ -32,6 +34,9 @@ from mailtool.mcp.models import (
 
 if TYPE_CHECKING:
     from mailtool.bridge import OutlookBridge
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 # Module-level bridge instance (set by server.py)
 _bridge: "OutlookBridge | None" = None
@@ -47,6 +52,10 @@ def _get_bridge() -> "OutlookBridge":
         OutlookComError: If bridge is not initialized
     """
     global _bridge
+
+    # Ensure COM is initialized for the current thread before accessing bridge
+    ensure_com_initialized()
+
     if _bridge is None:
         raise OutlookComError("Outlook bridge not initialized")
     return _bridge
