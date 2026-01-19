@@ -200,3 +200,16 @@ The MCP server is implemented in `src/mailtool/mcp/` using the official MCP Pyth
 - **exceptions.py** - Custom exception classes
 
 See [CLAUDE.md](CLAUDE.md) for development patterns and architecture.
+
+### Performance Benchmarks
+
+Performance benchmarks are available in `scripts/benchmarks/` to compare the legacy MCP server (v2.2) against the new SDK v2 implementation (v2.3):
+
+```bash
+# Run performance benchmarks (requires Windows with Outlook running)
+uv run --with pytest --with pywin32 python -m scripts.benchmarks.performance_benchmark
+```
+
+**Note:** Benchmarks require Windows with Outlook running and pywin32 installed. They cannot run in WSL2 or CI/CD environments without Outlook access.
+
+See [scripts/benchmarks/README.md](scripts/benchmarks/README.md) for benchmark documentation and [scripts/benchmarks/EXPECTED_RESULTS.md](scripts/benchmarks/EXPECTED_RESULTS.md) for expected output format and success criteria.
