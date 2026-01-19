@@ -1,6 +1,0 @@
-{
-  "default": {
-    "command": "uvx",
-    "args": ["mailtool"]
-  }
-}

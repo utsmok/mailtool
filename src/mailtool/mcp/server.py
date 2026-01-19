@@ -1158,7 +1158,11 @@ def edit_task(
         return OperationResult(success=False, message="Failed to edit task")
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for the MCP server."""
     # Run the MCP server with stdio transport
-    # This is the standard transport for MCP clients like Claude Code
     mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

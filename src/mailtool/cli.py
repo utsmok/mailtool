@@ -325,6 +325,8 @@ def main() -> None:
     del_task_parser = subparsers.add_parser("delete-task", help="Delete a task")
     del_task_parser.add_argument("--id", required=True, help="Task entry ID")
 
+    mcp_parser = subparsers.add_parser("mcp", help="Start the MCP server")
+
     args = parser.parse_args()
 
     if not args.command:
@@ -601,6 +603,11 @@ def main() -> None:
         else:
             print(json.dumps({"status": "error", "message": "Failed to delete task"}))
             sys.exit(1)
+
+    elif args.command == "mcp":
+        from mailtool.mcp.server import main as server_main
+
+        server_main()
 
 
 if __name__ == "__main__":
