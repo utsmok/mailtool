@@ -3,7 +3,16 @@
     "command": "cmd",
     "args": [
       "/c",
-      "${CLAUDE_PLUGIN_ROOT}\\start-mcp-server.bat"
+      "set",
+      "PYTHONPATH=${CLAUDE_PLUGIN_ROOT}\\src;%PYTHONPATH%",
+      "&&",
+      "cd",
+      "/d",
+      "${CLAUDE_PLUGIN_ROOT}",
+      "&&",
+      "python",
+      "-m",
+      "mailtool.mcp.server"
     ],
     "env": {
       "PYTHONUNBUFFERED": "1"
