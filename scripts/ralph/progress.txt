@@ -688,3 +688,30 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Server now has 21 tools registered (14 email + 5 calendar + 2 task)
   - Second Phase 5 task tool complete
   - Next: US-031 (create_task) - more complex with multiple parameters and CreateTaskResult return type
+
+## 2025-01-19 05:35 - US-031: Implement create_task tool
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Migrated create_task tool to use FastMCP @mcp.tool() decorator
+- Returns CreateTaskResult model with 3 fields (success, entry_id, message)
+- Handles 4 parameters: subject, body, due_date, priority
+- Correctly handles two bridge return types:
+  - str (EntryID): Task created successfully → success=True, entry_id=<EntryID>
+  - None: Creation failed → success=False, entry_id=None
+- Added CreateTaskResult import to models import block
+- Updated module docstring tool count from 21 to 22 tools
+- All code passes ruff linting and formatting checks
+- All 43 Pydantic model tests still passing
+- Server imports successfully and tool is registered with correct signature
+- Committed: feat(mcp): US-031 - Implement create_task tool
+- Files changed: src/mailtool/mcp/server.py, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - create_task follows similar pattern to create_appointment but simpler (2 return types vs 3 for send_email)
+  - Bridge.create_task() returns str (EntryID) or None (not True/False like boolean operations)
+  - Bridge parameter is 'importance', not 'priority' - need to map parameter names correctly
+  - CreateTaskResult.entry_id is optional (None for failed, str for success)
+  - Function signature with multiple optional parameters: (subject: str, body: str = "", due_date: str | None = None, priority: int = 1) -> CreateTaskResult
+  - Docstring present and descriptive for LLM understanding
+  - Module-level bridge pattern works consistently with complex tools
+  - Server now has 22 tools registered (14 email + 5 calendar + 3 task)
+  - Third Phase 5 task tool complete
+  - Next: US-032 (edit_task), US-033 (task resources)
