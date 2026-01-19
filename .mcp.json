@@ -3,8 +3,6 @@
     "command": "uv",
     "args": [
       "run",
-      "--with",
-      "pywin32:mcp",
       "--directory",
       "${CLAUDE_PLUGIN_ROOT}",
       "-m",
