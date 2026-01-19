@@ -53,7 +53,7 @@ def _get_bridge():
 
 
 # ============================================================================
-# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails, US-017: send_email, US-018: reply_email, US-019: forward_email, US-020: move_email)
+# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails, US-017: send_email, US-018: reply_email, US-019: forward_email, US-020: move_email, US-021: search_emails)
 # ============================================================================
 
 
@@ -388,6 +388,50 @@ def move_email(entry_id: str, folder: str) -> OperationResult:
             success=False,
             message=f"Failed to move email to {folder}",
         )
+
+
+@mcp.tool()
+def search_emails(filter_query: str, limit: int = 100) -> list[EmailSummary]:
+    """
+    Search emails using Outlook filter query.
+
+    Searches emails in the Inbox using Outlook Restriction filter (O(1) search).
+    Supports SQL-like filter syntax for advanced queries.
+
+    Args:
+        filter_query: SQL-like filter query string (e.g., "[Subject] LIKE '%meeting%'")
+        limit: Maximum number of results to return (default: 100)
+
+    Returns:
+        list[EmailSummary]: List of matching email summaries
+
+    Raises:
+        McpError: If bridge is not initialized
+
+    Examples:
+        search_emails("[Subject] LIKE '%project%'")  # Search by subject
+        search_emails("[Unread] = TRUE")  # Find unread emails
+        search_emails("[SenderEmailAddress] = 'john@example.com'")  # Search by sender
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Search emails via bridge
+    result = bridge.search_emails(filter_query=filter_query, limit=limit)
+
+    # Convert bridge result to list of EmailSummary models
+    return [
+        EmailSummary(
+            entry_id=email["entry_id"],
+            subject=email["subject"],
+            sender=email["sender"],
+            sender_name=email["sender_name"],
+            received_time=email["received_time"],
+            unread=email["unread"],
+            has_attachments=email["has_attachments"],
+        )
+        for email in result
+    ]
 
 
 # ============================================================================

@@ -169,7 +169,7 @@
       "title": "Implement search_emails tool",
       "description": "Migrate search_emails tool to use FastMCP @mcp.tool() decorator, return list[EmailSummary], handle filter_query and limit parameters",
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {
