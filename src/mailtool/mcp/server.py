@@ -53,7 +53,7 @@ def _get_bridge():
 
 
 # ============================================================================
-# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails, US-017: send_email)
+# Email Tools (US-008: get_email, US-011: mark_email, US-013: delete_email, US-016: list_emails, US-017: send_email, US-018: reply_email, US-019: forward_email, US-020: move_email)
 # ============================================================================
 
 
@@ -275,6 +275,118 @@ def send_email(
             success=True,
             entry_id=result,
             message=f"Email saved as draft: {result}",
+        )
+
+
+@mcp.tool()
+def reply_email(entry_id: str, body: str, reply_all: bool = False) -> OperationResult:
+    """
+    Reply to an email.
+
+    Replies to an email using O(1) direct access via EntryID.
+    Can reply to sender only or reply to all recipients.
+
+    Args:
+        entry_id: Outlook EntryID of the email (O(1) direct access)
+        body: Reply body text
+        reply_all: True to reply to all recipients, False to reply to sender only (default: False)
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Reply to email via bridge
+    result = bridge.reply_email(entry_id, body=body, reply_all=reply_all)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message=f"Email {'replied to all' if reply_all else 'replied'} successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message=f"Failed to {'reply to all' if reply_all else 'reply'}",
+        )
+
+
+@mcp.tool()
+def forward_email(entry_id: str, to: str, body: str = "") -> OperationResult:
+    """
+    Forward an email.
+
+    Forwards an email to a recipient using O(1) direct access via EntryID.
+    Optionally adds additional body text.
+
+    Args:
+        entry_id: Outlook EntryID of the email (O(1) direct access)
+        to: Recipient email address to forward to
+        body: Optional additional body text (default: "")
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Forward email via bridge
+    result = bridge.forward_email(entry_id, to=to, body=body)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message="Email forwarded successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message="Failed to forward email",
+        )
+
+
+@mcp.tool()
+def move_email(entry_id: str, folder: str) -> OperationResult:
+    """
+    Move an email to a different folder.
+
+    Moves an email to a specified folder using O(1) direct access via EntryID.
+
+    Args:
+        entry_id: Outlook EntryID of the email (O(1) direct access)
+        folder: Target folder name (e.g., "Archive", "Drafts", "Sent Items")
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Move email via bridge
+    result = bridge.move_email(entry_id, folder_name=folder)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message=f"Email moved to {folder}",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message=f"Failed to move email to {folder}",
         )
 
 

@@ -145,7 +145,7 @@
       "title": "Implement reply_email tool",
       "description": "Migrate reply_email tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle entry_id, body, reply_all parameters",
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {
@@ -153,7 +153,7 @@
       "title": "Implement forward_email tool",
       "description": "Migrate forward_email tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle entry_id, to, cc, bcc parameters",
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {
@@ -161,7 +161,7 @@
       "title": "Implement move_email tool",
       "description": "Migrate move_email tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle entry_id and folder parameters",
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "phase": 4
     },
     {
