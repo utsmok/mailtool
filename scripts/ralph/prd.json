@@ -321,7 +321,7 @@
       "title": "Update CLAUDE.md",
       "description": "Update CLAUDE.md with new architecture patterns, FastMCP decorator usage, model definitions, and updated development workflow",
       "priority": 40,
-      "passes": false,
+      "passes": true,
       "phase": 6
     },
     {
