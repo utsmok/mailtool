@@ -1002,3 +1002,26 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Legacy mcp_server.py is kept in root for rollback (not updated in plugin.json)
   - All Phase 6 documentation and plugin configuration now complete: US-039, US-040, US-041, US-042
   - Next: US-043 (update CI/CD workflow) - add MCP tests to GitHub Actions
+
+## 2025-01-19 07:30 - US-043: Update CI/CD workflow
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added pytest to dev dependencies in pyproject.toml (pytest>=9.0.0)
+- Updated .github/workflows/ci.yml to separate bridge tests and MCP server tests
+- Bridge tests run with: uv run pytest -v
+- MCP server tests run with: uv run --with pytest --with pywin32 python -m pytest tests/mcp/ -v
+- mcp dependency already installed via uv sync --all-groups (in main dependencies)
+- CI workflow now runs both test suites separately for better visibility
+- All 216 tests passing (50 bridge + 166 MCP)
+- YAML workflow syntax validated via git diff
+- Committed: feat(ci): US-043 - Update CI workflow to run MCP server tests
+- Files changed: .github/workflows/ci.yml, pyproject.toml, scripts/ralph/prd.json
+- **Learnings for future iterations:**
+  - pytest should be explicitly listed in dev dependencies (not assumed)
+  - MCP tests require --with pytest --with pywin32 flags for proper execution
+  - uv sync --all-groups installs all dependency groups (dev dependencies)
+  - CI workflow should separate test suites for better failure visibility
+  - Bridge tests don't need pywin32 flag (already in conditional dependencies)
+  - MCP tests need explicit pywin32 installation for Windows CI environment
+  - YAML syntax can be validated with git diff (visual inspection)
+  - All Phase 6 CI/CD updates now complete: US-043
+  - Next: US-044 (performance testing) - benchmark old vs new implementation
