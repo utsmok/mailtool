@@ -184,7 +184,7 @@ def get_appointment(entry_id: str) -> AppointmentDetails:
 
 
 # ============================================================================
-# Task Tools (US-010: get_task)
+# Task Tools (US-010: get_task, US-012: complete_task)
 # ============================================================================
 
 
@@ -227,6 +227,42 @@ def get_task(entry_id: str) -> TaskSummary:
         complete=result["complete"],
         percent_complete=result["percent_complete"],
     )
+
+
+@mcp.tool()
+def complete_task(entry_id: str) -> OperationResult:
+    """
+    Mark a task as complete.
+
+    Marks a task as complete with 100% percent complete status using O(1)
+    direct access via EntryID.
+
+    Args:
+        entry_id: Outlook EntryID of the task (O(1) direct access)
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Mark task as complete via bridge
+    result = bridge.complete_task(entry_id)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message="Task marked as complete",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message="Failed to mark task as complete",
+        )
 
 
 if __name__ == "__main__":

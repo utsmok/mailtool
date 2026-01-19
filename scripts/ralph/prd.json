@@ -97,7 +97,7 @@
       "title": "Implement complete_task tool",
       "description": "Migrate complete_task tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle bridge.complete_task() call",
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "phase": 3
     },
     {
