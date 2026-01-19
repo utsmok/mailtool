@@ -209,7 +209,7 @@
       "title": "Implement respond_to_meeting tool",
       "description": "Migrate respond_to_meeting tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle entry_id and response parameter (accept/decline/tentative)",
       "priority": 26,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {

@@ -442,7 +442,7 @@ def search_emails(filter_query: str, limit: int = 100) -> list[EmailSummary]:
 
 
 # ============================================================================
-# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events, US-024: create_appointment, US-025: edit_appointment)
+# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events, US-024: create_appointment, US-025: edit_appointment, US-026: respond_to_meeting)
 # ============================================================================
 
 
@@ -700,6 +700,43 @@ def edit_appointment(
         return OperationResult(
             success=False,
             message="Failed to update appointment",
+        )
+
+
+@mcp.tool()
+def respond_to_meeting(entry_id: str, response: str) -> OperationResult:
+    """
+    Respond to a meeting invitation.
+
+    Responds to a meeting invitation request using O(1) direct access via EntryID.
+    Supports accept, decline, and tentative responses.
+
+    Args:
+        entry_id: Outlook EntryID of the meeting invitation (O(1) direct access)
+        response: Response type - "accept", "decline", or "tentative"
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Respond to meeting via bridge
+    result = bridge.respond_to_meeting(entry_id, response)
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message=f"Meeting {response.lower()}ed successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message=f"Failed to {response.lower()} meeting",
         )
 
 
