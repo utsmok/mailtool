@@ -273,7 +273,7 @@
       "title": "Write tool tests",
       "description": "Create tests/mcp/test_tools.py with comprehensive tests for all 23 tools using SDK client session and stdio transport",
       "priority": 34,
-      "passes": false,
+      "passes": true,
       "phase": 6
     },
     {
