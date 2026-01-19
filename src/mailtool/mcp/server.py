@@ -442,7 +442,7 @@ def search_emails(filter_query: str, limit: int = 100) -> list[EmailSummary]:
 
 
 # ============================================================================
-# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events, US-024: create_appointment)
+# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events, US-024: create_appointment, US-025: edit_appointment)
 # ============================================================================
 
 
@@ -639,6 +639,67 @@ def create_appointment(
             success=False,
             entry_id=None,
             message="Failed to create appointment",
+        )
+
+
+@mcp.tool()
+def edit_appointment(
+    entry_id: str,
+    required_attendees: str | None = None,
+    optional_attendees: str | None = None,
+    subject: str | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    location: str | None = None,
+    body: str | None = None,
+) -> OperationResult:
+    """
+    Edit an existing appointment.
+
+    Updates an existing appointment's fields using O(1) direct access via EntryID.
+    Only updates fields that are provided (non-None parameters).
+
+    Args:
+        entry_id: Outlook EntryID of the appointment (O(1) direct access)
+        required_attendees: Semicolon-separated list of required attendees (optional)
+        optional_attendees: Semicolon-separated list of optional attendees (optional)
+        subject: New subject (optional)
+        start: New start timestamp in 'YYYY-MM-DD HH:MM:SS' format (optional)
+        end: New end timestamp in 'YYYY-MM-DD HH:MM:SS' format (optional)
+        location: New location (optional)
+        body: New body/description text (optional)
+
+    Returns:
+        OperationResult: Result of the operation with success status and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Edit appointment via bridge
+    result = bridge.edit_appointment(
+        entry_id=entry_id,
+        required_attendees=required_attendees,
+        optional_attendees=optional_attendees,
+        subject=subject,
+        start=start,
+        end=end,
+        location=location,
+        body=body,
+    )
+
+    # Convert boolean result to OperationResult
+    if result:
+        return OperationResult(
+            success=True,
+            message="Appointment updated successfully",
+        )
+    else:
+        return OperationResult(
+            success=False,
+            message="Failed to update appointment",
         )
 
 

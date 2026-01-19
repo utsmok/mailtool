@@ -201,7 +201,7 @@
       "title": "Implement edit_appointment tool",
       "description": "Migrate edit_appointment tool to use FastMCP @mcp.tool() decorator, return OperationResult model, handle entry_id and all optional appointment parameters",
       "priority": 25,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {
