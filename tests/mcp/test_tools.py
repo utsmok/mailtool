@@ -1,7 +1,7 @@
 """
 MCP Tool Tests
 
-Comprehensive tests for all 23 MCP tools.
+Comprehensive tests for all 24 MCP tools.
 Tests directly invoke tool functions using a mock bridge.
 
 These tests use mocking to avoid requiring Outlook to be running.
@@ -382,6 +382,48 @@ class TestSearchEmails:
 
         assert isinstance(result, list)
         mock_bridge.search_emails.assert_called_once()
+
+
+class TestListUnreadEmails:
+    """Test list_unread_emails tool"""
+
+    def test_list_unread_emails_default(self, server_with_mock, mock_bridge):
+        """Test list_unread_emails with default parameters"""
+        from mailtool.mcp.server import list_unread_emails
+
+        # Configure mock to return unread emails
+        mock_bridge.search_emails.return_value = [
+            {
+                "entry_id": "unread-123",
+                "subject": "Unread Email",
+                "sender": "unread@example.com",
+                "sender_name": "Unread Sender",
+                "received_time": "2025-01-19 10:00:00",
+                "unread": True,
+                "has_attachments": False,
+            }
+        ]
+
+        result = list_unread_emails()
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].subject == "Unread Email"
+        assert result[0].entry_id == "unread-123"
+        mock_bridge.search_emails.assert_called_once_with(
+            filter_query="[Unread] = TRUE", limit=10
+        )
+
+    def test_list_unread_emails_with_limit(self, server_with_mock, mock_bridge):
+        """Test list_unread_emails with custom limit"""
+        from mailtool.mcp.server import list_unread_emails
+
+        result = list_unread_emails(limit=5)
+
+        assert isinstance(result, list)
+        mock_bridge.search_emails.assert_called_once_with(
+            filter_query="[Unread] = TRUE", limit=5
+        )
 
 
 # =============================================================================
