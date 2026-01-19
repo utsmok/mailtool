@@ -63,12 +63,14 @@ Migrate the mailtool MCP server from a hand-rolled JSON-RPC implementation to th
 **Description:** As a developer, I need to create the basic FastMCP server instance so that tools and resources can be registered.
 
 **Acceptance Criteria:**
-- [ ] Create FastMCP instance with name "mailtool-outlook-bridge"
-- [ ] Attach `outlook_lifespan` to server
-- [ ] Add basic `if __name__ == "__main__"` block calling `mcp.run()`
-- [ ] Test server starts via `uv run --with mcp --with pywin32 -m mailtool.mcp.server`
-- [ ] Verify server responds to MCP initialize handshake
-- [ ] Typecheck passes
+- [x] Create FastMCP instance with name "mailtool-outlook-bridge"
+- [x] Attach `outlook_lifespan` to server
+- [x] Add basic `if __name__ == "__main__"` block calling `mcp.run()`
+- [x] Test server starts via `uv run --with mcp --with pywin32 -m mailtool.mcp.server`
+- [x] Verify server responds to MCP initialize handshake
+- [x] Typecheck passes
+
+**Status**: ✅ COMPLETED (2025-01-19)
 
 ---
 
@@ -78,13 +80,15 @@ Migrate the mailtool MCP server from a hand-rolled JSON-RPC implementation to th
 **Description:** As a developer, I need strongly-typed email models so that tools return validated structured output.
 
 **Acceptance Criteria:**
-- [ ] Create `EmailSummary` model (entry_id, subject, sender, sender_name, received_time, unread, has_attachments)
-- [ ] Create `EmailDetails` model (extends EmailSummary with body, html_body)
-- [ ] Create `SendEmailResult` model (success, entry_id, message)
-- [ ] All fields have descriptive Field() descriptions for LLM understanding
-- [ ] Optional fields match bridge behavior (received_time, unread can be None)
-- [ ] Add model validation tests in `tests/mcp/test_models.py`
-- [ ] Typecheck passes
+- [x] Create `EmailSummary` model (entry_id, subject, sender, sender_name, received_time, unread, has_attachments)
+- [x] Create `EmailDetails` model (extends EmailSummary with body, html_body)
+- [x] Create `SendEmailResult` model (success, entry_id, message)
+- [x] All fields have descriptive Field() descriptions for LLM understanding
+- [x] Optional fields match bridge behavior (received_time, unread can be None)
+- [x] Add model validation tests in `tests/mcp/test_models.py`
+- [x] Typecheck passes
+
+**Status**: ✅ COMPLETED (2025-01-19)
 
 ### US-005: Define calendar Pydantic models
 **Description:** As a developer, I need strongly-typed calendar models so that appointment tools return structured output.
