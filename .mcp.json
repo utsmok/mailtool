@@ -1,15 +1,6 @@
 {
   "default": {
-    "command": "uv",
-    "args": [
-      "run",
-      "--directory",
-      "${CLAUDE_PLUGIN_ROOT}",
-      "-m",
-      "mailtool.mcp.server"
-    ],
-    "env": {
-      "PYTHONUNBUFFERED": "1"
-    }
+    "command": "uvx",
+    "args": ["mailtool"]
   }
 }
