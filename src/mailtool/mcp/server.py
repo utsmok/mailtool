@@ -4,7 +4,7 @@ This module provides the main FastMCP server instance for Outlook automation.
 It implements the Model Context Protocol (MCP) using the official MCP Python SDK v2
 with the FastMCP framework.
 
-The server provides 23 tools and 7 resources for Outlook email, calendar, and task management.
+The server provides 21 tools and 5 resources for Outlook email, calendar, and task management.
 All tools return structured Pydantic models for type safety and LLM understanding.
 """
 
@@ -791,7 +791,7 @@ def get_free_busy(
 
 
 # ============================================================================
-# Task Tools (US-010: get_task, US-012: complete_task, US-015: delete_task, US-029: list_tasks, US-030: list_all_tasks)
+# Task Tools (US-010: get_task, US-012: complete_task, US-015: delete_task, US-029: list_tasks, US-030: list_all_tasks, US-031: create_task, US-032: edit_task)
 # ============================================================================
 
 
@@ -817,6 +817,43 @@ def list_tasks(include_completed: bool = False) -> list[TaskSummary]:
 
     # List tasks via bridge
     result = bridge.list_tasks(include_completed=include_completed)
+
+    # Convert bridge result to list of TaskSummary models
+    return [
+        TaskSummary(
+            entry_id=task["entry_id"],
+            subject=task["subject"],
+            body=task["body"],
+            due_date=task["due_date"],
+            status=task["status"],
+            priority=task["priority"],
+            complete=task["complete"],
+            percent_complete=task["percent_complete"],
+        )
+        for task in result
+    ]
+
+
+@mcp.tool()
+def list_all_tasks() -> list[TaskSummary]:
+    """
+    List all tasks from the Outlook Tasks folder (including completed).
+
+    Retrieves a complete list of all tasks from the Outlook Tasks folder,
+    including both incomplete and completed tasks. This is a convenience
+    function that calls list_tasks with include_completed=True.
+
+    Returns:
+        list[TaskSummary]: List of all task summaries with basic information
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # List all tasks via bridge (hardcoded include_completed=True)
+    result = bridge.list_tasks(include_completed=True)
 
     # Convert bridge result to list of TaskSummary models
     return [
