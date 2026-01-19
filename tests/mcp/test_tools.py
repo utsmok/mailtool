@@ -194,9 +194,7 @@ class TestListEmails:
         result = list_emails(folder="Sent Items", limit=10)
 
         assert isinstance(result, list)
-        mock_bridge.list_emails.assert_called_once_with(
-            limit=10, folder="Sent Items"
-        )
+        mock_bridge.list_emails.assert_called_once_with(limit=10, folder="Sent Items")
 
 
 class TestGetEmail:
@@ -296,7 +294,9 @@ class TestReplyEmail:
         result = reply_email("email-123", "Reply body", reply_all=False)
 
         assert result.success is True
-        mock_bridge.reply_email.assert_called_once_with("email-123", body="Reply body", reply_all=False)
+        mock_bridge.reply_email.assert_called_once_with(
+            "email-123", body="Reply body", reply_all=False
+        )
 
     def test_reply_email_all(self, server_with_mock, mock_bridge):
         """Test reply_email with reply_all=True"""
@@ -305,7 +305,9 @@ class TestReplyEmail:
         result = reply_email("email-123", "Reply body", reply_all=True)
 
         assert result.success is True
-        mock_bridge.reply_email.assert_called_once_with("email-123", body="Reply body", reply_all=True)
+        mock_bridge.reply_email.assert_called_once_with(
+            "email-123", body="Reply body", reply_all=True
+        )
 
 
 class TestForwardEmail:
@@ -399,7 +401,9 @@ class TestListCalendarEvents:
         assert isinstance(result, list)
         assert len(result) == 1
         assert result[0].subject == "Test Meeting"
-        mock_bridge.list_calendar_events.assert_called_once_with(days=7, all_events=False)
+        mock_bridge.list_calendar_events.assert_called_once_with(
+            days=7, all_events=False
+        )
 
     def test_list_calendar_events_with_days(self, server_with_mock, mock_bridge):
         """Test list_calendar_events with custom days"""
@@ -408,7 +412,9 @@ class TestListCalendarEvents:
         result = list_calendar_events(days=1)
 
         assert isinstance(result, list)
-        mock_bridge.list_calendar_events.assert_called_once_with(days=1, all_events=False)
+        mock_bridge.list_calendar_events.assert_called_once_with(
+            days=1, all_events=False
+        )
 
 
 class TestGetAppointment:
