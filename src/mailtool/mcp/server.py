@@ -17,6 +17,7 @@ from mailtool.mcp.lifespan import outlook_lifespan
 from mailtool.mcp.models import (
     AppointmentDetails,
     AppointmentSummary,
+    CreateAppointmentResult,
     EmailDetails,
     EmailSummary,
     OperationResult,
@@ -441,7 +442,7 @@ def search_emails(filter_query: str, limit: int = 100) -> list[EmailSummary]:
 
 
 # ============================================================================
-# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events)
+# Calendar Tools (US-009: get_appointment, US-014: delete_appointment, US-023: list_calendar_events, US-024: create_appointment)
 # ============================================================================
 
 
@@ -574,6 +575,70 @@ def delete_appointment(entry_id: str) -> OperationResult:
         return OperationResult(
             success=False,
             message="Failed to delete appointment",
+        )
+
+
+@mcp.tool()
+def create_appointment(
+    subject: str,
+    start: str,
+    end: str,
+    location: str = "",
+    body: str = "",
+    all_day: bool = False,
+    required_attendees: str | None = None,
+    optional_attendees: str | None = None,
+) -> CreateAppointmentResult:
+    """
+    Create a calendar appointment.
+
+    Creates a new appointment or meeting in the Outlook calendar.
+    Supports all-day events, location, body/description, and attendees.
+
+    Args:
+        subject: Appointment subject line
+        start: Start timestamp in 'YYYY-MM-DD HH:MM:SS' format
+        end: End timestamp in 'YYYY-MM-DD HH:MM:SS' format
+        location: Appointment location (default: "")
+        body: Appointment body/description text (default: "")
+        all_day: True for all-day event, False for timed event (default: False)
+        required_attendees: Semicolon-separated list of required attendees (optional)
+        optional_attendees: Semicolon-separated list of optional attendees (optional)
+
+    Returns:
+        CreateAppointmentResult: Result with success status, appointment entry ID (if created), and message
+
+    Raises:
+        McpError: If bridge is not initialized
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Create appointment via bridge
+    result = bridge.create_appointment(
+        subject=subject,
+        start=start,
+        end=end,
+        location=location,
+        body=body,
+        all_day=all_day,
+        required_attendees=required_attendees,
+        optional_attendees=optional_attendees,
+    )
+
+    # Convert bridge result to CreateAppointmentResult
+    # Bridge returns: str (EntryID) if successful, None if failed
+    if result:
+        return CreateAppointmentResult(
+            success=True,
+            entry_id=result,
+            message=f"Appointment created successfully: {result}",
+        )
+    else:
+        return CreateAppointmentResult(
+            success=False,
+            entry_id=None,
+            message="Failed to create appointment",
         )
 
 

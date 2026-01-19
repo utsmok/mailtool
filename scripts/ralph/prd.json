@@ -193,7 +193,7 @@
       "title": "Implement create_appointment tool",
       "description": "Migrate create_appointment tool to use FastMCP @mcp.tool() decorator, return CreateAppointmentResult model, handle subject, start, end, location, body, all_day, required_attendees, optional_attendees parameters",
       "priority": 24,
-      "passes": false,
+      "passes": true,
       "phase": 5
     },
     {
