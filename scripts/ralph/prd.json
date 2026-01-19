@@ -313,7 +313,7 @@
       "title": "Update README.md",
       "description": "Update README.md with new MCP Server section describing SDK v2 features, structured output, resources, type safety, and migration notes",
       "priority": 39,
-      "passes": false,
+      "passes": true,
       "phase": 6
     },
     {
