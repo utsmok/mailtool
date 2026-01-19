@@ -81,7 +81,7 @@
       "title": "Implement get_task tool",
       "description": "Migrate get_task tool to use FastMCP @mcp.tool() decorator, return TaskSummary model, handle bridge.get_task_body() call, raise McpError if task not found",
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "phase": 3
     },
     {

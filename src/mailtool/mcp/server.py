@@ -14,7 +14,7 @@ from mcp import McpError
 from mcp.server import FastMCP
 
 from mailtool.mcp.lifespan import outlook_lifespan
-from mailtool.mcp.models import AppointmentDetails, EmailDetails
+from mailtool.mcp.models import AppointmentDetails, EmailDetails, TaskSummary
 
 if TYPE_CHECKING:
     from mailtool.bridge import OutlookBridge
@@ -139,6 +139,52 @@ def get_appointment(entry_id: str) -> AppointmentDetails:
         response_status=result["response_status"],
         meeting_status=result["meeting_status"],
         response_requested=result["response_requested"],
+    )
+
+
+# ============================================================================
+# Task Tools (US-010: get_task)
+# ============================================================================
+
+
+@mcp.tool()
+def get_task(entry_id: str) -> TaskSummary:
+    """
+    Get full task details and body by entry ID.
+
+    Retrieves complete task information including body content and all
+    task metadata using O(1) direct access via EntryID.
+
+    Args:
+        entry_id: Outlook EntryID of the task (O(1) direct access)
+
+    Returns:
+        TaskSummary: Complete task details including body content
+
+    Raises:
+        McpError: If task not found or cannot be accessed
+    """
+    # Get bridge from module-level state
+    bridge = _get_bridge()
+
+    # Get task details from bridge
+    result = bridge.get_task(entry_id)
+
+    # Check if task was found
+    if result is None:
+        raise McpError(f"Task not found: {entry_id}")
+
+    # Convert bridge result to TaskSummary model
+    # Note: TaskSummary includes all fields from bridge.get_task()
+    return TaskSummary(
+        entry_id=result["entry_id"],
+        subject=result["subject"],
+        body=result["body"],
+        due_date=result["due_date"],
+        status=result["status"],
+        priority=result["priority"],
+        complete=result["complete"],
+        percent_complete=result["percent_complete"],
     )
 
 
