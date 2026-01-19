@@ -715,3 +715,29 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Server now has 22 tools registered (14 email + 5 calendar + 3 task)
   - Third Phase 5 task tool complete
   - Next: US-032 (edit_task), US-033 (task resources)
+
+## 2025-01-19 05:40 - US-032: Implement edit_task tool
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Migrated edit_task tool to use FastMCP @mcp.tool() decorator
+- Returns OperationResult model with success boolean and message
+- Handles entry_id and all optional task parameters (subject, body, due_date, priority, percent_complete, complete)
+- Only updates fields that are provided (non-None parameters)
+- Updated module docstring tool count from 22 to 23 tools
+- All code passes ruff linting and formatting checks
+- All 43 Pydantic model tests still passing
+- Server imports successfully and tool is registered with correct signature
+- Committed: feat(mcp): US-032 - Implement edit_task tool
+- Files changed: src/mailtool/mcp/server.py, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- **Learnings for future iterations:**
+  - edit_task follows same OperationResult pattern as edit_appointment (US-025)
+  - Bridge.edit_task() returns True/False (not None like get_* methods)
+  - Function signature with all optional parameters except entry_id: (entry_id: str, subject: str | None = None, body: str | None = None, due_date: str | None = None, priority: int | None = None, percent_complete: float | None = None, complete: bool | None = None) -> OperationResult
+  - Bridge parameter is 'importance', not 'priority' - need to map parameter names correctly
+  - Docstring present and descriptive for LLM understanding
+  - Bridge.edit_task() updates only provided fields (checks if parameter is not None before setting)
+  - Module-level bridge pattern works consistently with edit operations
+  - Pre-commit bypass not needed (ruff checks passed without pywin32 issues)
+  - Server now has 23 tools registered (14 email + 5 calendar + 4 task)
+  - Fourth and final Phase 5 task tool complete (all task tools done!)
+  - All Phase 5 tools now complete: US-023 through US-032 (10 user stories: 6 calendar + 4 task)
+  - Next: US-033 (task resources) - final resource implementation
