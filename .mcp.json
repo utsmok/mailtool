@@ -2,15 +2,10 @@
   "default": {
     "command": "uv",
     "args": [
-      "--directory",
-      "${CLAUDE_PLUGIN_ROOT}",
       "run",
-      "python",
-      "-m",
-      "mailtool.mcp.server"
-    ],
-    "env": {
-      "PYTHONUNBUFFERED": "1"
-    }
+      "mcp",
+      "run",
+      "src/mailtool/mcp/server.py"
+    ]
   }
 }
