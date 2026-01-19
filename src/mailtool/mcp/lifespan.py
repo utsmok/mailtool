@@ -3,26 +3,15 @@
 This module provides Outlook bridge lifecycle management for the MCP server.
 It handles:
 - Creating and warming up OutlookBridge instance on startup
+- Setting module-level bridge state for tool access
 - Releasing COM objects and forcing garbage collection on shutdown
 """
 
 import asyncio
 import gc
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
 
 from mailtool.bridge import OutlookBridge
-
-
-@dataclass
-class OutlookContext:
-    """Context object holding the Outlook bridge instance
-
-    Attributes:
-        bridge: The OutlookBridge instance for COM automation
-    """
-
-    bridge: OutlookBridge
 
 
 @asynccontextmanager
@@ -32,14 +21,14 @@ async def outlook_lifespan(app):
     This function manages the complete lifecycle of the Outlook COM bridge:
     1. Creates OutlookBridge instance on startup
     2. Warms up the connection with retry attempts
-    3. Yields the context for tool/resource access
+    3. Sets module-level bridge state for tool access
     4. Cleans up COM objects on shutdown
 
     Args:
-        app: The FastMCP server instance (not used but required by FastMCP)
+        app: The FastMCP server instance (used to access module state)
 
     Yields:
-        OutlookContext: Context object containing the bridge instance
+        None: The bridge is set in server._bridge module state
 
     Raises:
         Exception: If Outlook cannot be connected to after retry attempts
@@ -68,8 +57,14 @@ async def outlook_lifespan(app):
                 # Wait before retry
                 await asyncio.sleep(retry_delay)
 
-        # Yield context for tools/resources to use
-        yield OutlookContext(bridge=bridge)
+        # Set module-level bridge state for tools to access
+        # Import here to avoid circular imports
+        from mailtool.mcp import server
+
+        server._bridge = bridge
+
+        # Yield for server to start
+        yield
 
     finally:
         # Cleanup: Release COM objects and force garbage collection
