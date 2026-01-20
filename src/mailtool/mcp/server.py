@@ -1187,30 +1187,38 @@ def edit_task(
         return OperationResult(success=False, message="Failed to edit task")
 
 
-def main():
-    """Entry point for the MCP server."""
-    # Parse CLI arguments for default account
-    parser = argparse.ArgumentParser(
-        description="Mailtool MCP Server - Outlook automation via MCP",
-        epilog=(
-            "Examples:\n"
-            "  uv run --with pywin32 -m mailtool.mcp.server\n"
-            "  uv run --with pywin32 -m mailtool.mcp.server --account 'john@example.com'\n"
-            "  uv run --with pywin32 -m mailtool.mcp.server --acc 'john@example.com'\n"
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--account",
-        "--acc",
-        dest="account",
-        help="Default account name or email address for Outlook operations",
-    )
+def main(default_account: str | None = None):
+    """Entry point for the MCP server.
 
-    args = parser.parse_args()
+    Args:
+        default_account: Optional default account name/email (bypasses argparse if provided)
+    """
+    # If default_account is provided directly, use it
+    # Otherwise, parse CLI arguments
+    if default_account is None:
+        # Parse CLI arguments for default account
+        parser = argparse.ArgumentParser(
+            description="Mailtool MCP Server - Outlook automation via MCP",
+            epilog=(
+                "Examples:\n"
+                "  uv run --with pywin32 -m mailtool.mcp.server\n"
+                "  uv run --with pywin32 -m mailtool.mcp.server --account 'john@example.com'\n"
+                "  uv run --with pywin32 -m mailtool.mcp.server --acc 'john@example.com'\n"
+            ),
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+        )
+        parser.add_argument(
+            "--account",
+            "--acc",
+            dest="account",
+            help="Default account name or email address for Outlook operations",
+        )
+
+        args = parser.parse_args()
+        default_account = args.account
 
     # Create server instance with default account if provided
-    server = _create_mcp_server(default_account=args.account)
+    server = _create_mcp_server(default_account=default_account)
 
     # Run the MCP server with stdio transport
     server.run(transport="stdio")
