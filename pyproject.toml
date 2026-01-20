@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "mailtool"
-version = "0.9.1"
+version = "0.9.2"
 description = "Outlook automation bridge for WSL2 via COM with MCP server for Claude Code"
 readme = "README.md"
 requires-python = ">=3.13"
