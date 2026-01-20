@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def outlook_lifespan(app):
+async def outlook_lifespan(app, default_account: str | None = None):
     """Async context manager for Outlook bridge lifecycle
 
     This function manages the complete lifecycle of the Outlook COM bridge:
@@ -37,6 +37,7 @@ async def outlook_lifespan(app):
 
     Args:
         app: The FastMCP server instance (used to access module state)
+        default_account: Optional default account name/email to use for folder operations
 
     Yields:
         None: The bridge is set in server._bridge module state
@@ -64,7 +65,11 @@ async def outlook_lifespan(app):
         # Create Outlook bridge instance directly in main thread
         # NOT in executor - COM objects require thread affinity
         logger.info("Creating Outlook bridge...")
-        bridge = OutlookBridge()
+        if default_account:
+            logger.info(f"Using default account: {default_account}")
+            bridge = OutlookBridge(default_account=default_account)
+        else:
+            bridge = OutlookBridge()
         logger.info("Outlook bridge created successfully")
 
         # Warmup: Test that COM is responsive with retries
