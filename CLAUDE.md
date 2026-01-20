@@ -325,6 +325,7 @@ uv pip install -e .
 
 Add the following to `C:\Users\Sam\.claude.json` in the `mcpServers` section:
 
+**Basic configuration (no default account):**
 ```json
 {
   "mcpServers": {
@@ -337,6 +338,30 @@ Add the following to `C:\Users\Sam\.claude.json` in the `mcpServers` section:
         "pywin32",
         "-m",
         "mailtool.mcp.server"
+      ],
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
+```
+
+**With default account specified:**
+```json
+{
+  "mcpServers": {
+    "mailtool": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "pywin32",
+        "-m",
+        "mailtool.mcp.server",
+        "--account",
+        "s.mok@utwente.nl"
       ],
       "env": {
         "PYTHONUNBUFFERED": "1"
@@ -423,6 +448,9 @@ uv run --with pytest --with pywin32 python -m pytest tests/mcp/test_exceptions.p
 
 # Test MCP server manually (requires Outlook running)
 uv run --with mcp --with pywin32 python -m mailtool.mcp.server
+
+# Test MCP server with default account
+uv run --with mcp --with pywin32 python -m mailtool.mcp.server --account "s.mok@utwente.nl"
 
 # Add new dependency
 uv add <package>
