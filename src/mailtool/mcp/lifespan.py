@@ -38,6 +38,7 @@ async def outlook_lifespan(app, default_account: str | None = None):
     Args:
         app: The FastMCP server instance (used to access module state)
         default_account: Optional default account name/email to use for folder operations
+                        If None, will read from global _default_account in server module
 
     Yields:
         None: The bridge is set in server._bridge module state
@@ -50,6 +51,15 @@ async def outlook_lifespan(app, default_account: str | None = None):
     bridge = None
     com_initialized = False
     try:
+        # If default_account not provided, read from global variable in server module
+        if default_account is None:
+            from mailtool.mcp import server as server_module
+            default_account = getattr(server_module, "_default_account", None)
+            if default_account:
+                logger.info(f"Read default_account from server module: {default_account}")
+        elif default_account:
+            logger.info(f"Using provided default_account parameter: {default_account}")
+
         # Log lifespan start (using stderr to ensure visibility)
         logger.error("=" * 60)
         logger.error("LIFESPAN: Starting Outlook bridge initialization")

@@ -9,7 +9,6 @@ All tools return structured Pydantic models for type safety and LLM understandin
 """
 
 import argparse
-import functools
 import logging
 from typing import TYPE_CHECKING
 
@@ -44,33 +43,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Global variable to store default account from CLI args
+# This is set in main() before the server runs, and read by the lifespan
 _default_account: str | None = None
 
 
-def _create_mcp_server(default_account: str | None = None) -> FastMCP:
-    """Create FastMCP server instance with optional default account
-
-    Args:
-        default_account: Optional default account name/email for folder operations
-
-    Returns:
-        FastMCP: Configured server instance
-    """
-    # Use functools.partial to bind default_account to lifespan
-    lifespan_with_account = functools.partial(
-        outlook_lifespan, default_account=default_account
-    )
-
-    # Create FastMCP server instance
-    # The lifespan parameter manages Outlook COM bridge lifecycle (creation, warmup, cleanup)
-    return FastMCP(
-        name="mailtool-outlook-bridge",
-        lifespan=lifespan_with_account,
-    )
-
-
-# Create default server instance (no default account)
-mcp = _create_mcp_server(default_account=None)
+# Create FastMCP server instance
+# The lifespan parameter manages Outlook COM bridge lifecycle (creation, warmup, cleanup)
+# Note: The lifespan reads from the global _default_account variable
+mcp = FastMCP(
+    name="mailtool-outlook-bridge",
+    lifespan=outlook_lifespan,
+)
 
 # Register email resources (US-022), calendar resources (US-028), and task resources (US-033)
 register_email_resources(mcp)
@@ -1193,6 +1176,8 @@ def main(default_account: str | None = None):
     Args:
         default_account: Optional default account name/email (bypasses argparse if provided)
     """
+    global _default_account
+
     # If default_account is provided directly, use it
     # Otherwise, parse CLI arguments
     if default_account is None:
@@ -1217,11 +1202,12 @@ def main(default_account: str | None = None):
         args = parser.parse_args()
         default_account = args.account
 
-    # Create server instance with default account if provided
-    server = _create_mcp_server(default_account=default_account)
+    # Set the global default account that the lifespan will read
+    _default_account = default_account
 
     # Run the MCP server with stdio transport
-    server.run(transport="stdio")
+    # Uses the global 'mcp' instance which has all tools registered
+    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
