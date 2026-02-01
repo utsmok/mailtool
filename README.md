@@ -37,7 +37,7 @@ This will configure the MCP server with 24 tools for email, calendar, and task m
 
 ### 1. Start Outlook
 
-Make sure Outlook is running and logged into your `s.mok@utwente.nl` account.
+Make sure Outlook is running and logged into your account.
 
 ### 2. That's it!
 
