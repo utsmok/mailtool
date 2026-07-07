@@ -21,11 +21,28 @@ Usage:
 # Modified to test pre-commit hook
 
 import contextlib
+import re
 import sys
 import traceback
 from datetime import datetime, timedelta
 
-import win32com.client
+try:
+    import win32com.client
+except ImportError:
+    # pywin32 is only required for live COM access. Allowing the module to import
+    # without it means the pure-Python helpers (e.g. _clean_body_top, _SMTP_REGEX,
+    # MAIL_ONLY_FILTER) can be unit-tested on any platform. Instantiating
+    # OutlookBridge still requires pywin32 + a running Outlook on Windows.
+    win32com = None
+
+# Regex used to salvage an SMTP address out of a raw Exchange DN or display string
+# when both GetExchangeUser() and the PropertyAccessor lookup fail.
+_SMTP_REGEX = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+
+# Outlook Restrict filter that captures IPM.Note and its subtypes (e.g. IPM.Note.SMIME)
+# while excluding meeting notifications (IPM.Schedule.Meeting.*), post items, reports,
+# etc. Uses the same half-open MessageClass range trick as list_calendar_events().
+MAIL_ONLY_FILTER = "[MessageClass] >= 'IPM.Note' AND [MessageClass] < 'IPM.Note{'"
 
 
 class OutlookBridge:
@@ -410,45 +427,212 @@ class OutlookBridge:
 
     def resolve_smtp_address(self, mail_item):
         """
-        Get SMTP address from Exchange address (EX type)
+        Get the SMTP address of a mail item's sender.
+
+        Robust against cached Exchange mode where Sender.GetExchangeUser() returns
+        None. Resolution order for EX-type senders:
+          1. Sender.GetExchangeUser().PrimarySmtpAddress   (original path)
+          2. PropertyAccessor -> PidTagSenderSmtpAddress   (0x5D01001F)
+          3. regex salvage of an SMTP token from SenderEmailAddress
+          4. the raw SenderEmailAddress (may be an Exchange DN)
 
         Args:
-            mail_item: Outlook MailItem
+            mail_item: Outlook MailItem (or compatible item with a Sender)
 
         Returns:
-            SMTP email address string
+            SMTP email address string ("" if nothing could be resolved)
         """
         try:
-            if (
-                (
-                    hasattr(mail_item, "SenderEmailType")
-                    and mail_item.SenderEmailType == "EX"
-                )
-                and hasattr(mail_item, "Sender")
-                and hasattr(mail_item.Sender, "GetExchangeUser")
-            ):
-                exchange_user = mail_item.Sender.GetExchangeUser()
-                if hasattr(exchange_user, "PrimarySmtpAddress"):
-                    return exchange_user.PrimarySmtpAddress
-            return (
-                mail_item.SenderEmailAddress
-                if hasattr(mail_item, "SenderEmailAddress")
-                else ""
-            )
-        except Exception:
-            return (
-                mail_item.SenderEmailAddress
-                if hasattr(mail_item, "SenderEmailAddress")
-                else ""
-            )
+            # Non-EX senders already carry an SMTP address; return as-is.
+            sender_email_type = self._safe_get_attr(mail_item, "SenderEmailType", "")
+            raw_address = self._safe_get_attr(mail_item, "SenderEmailAddress", "") or ""
+            if sender_email_type and sender_email_type != "EX":
+                return raw_address
 
-    def list_emails(self, limit=10, folder="Inbox"):
+            # EX path.
+            sender = self._safe_get_attr(mail_item, "Sender")
+            if sender is not None:
+                try:
+                    exchange_user = sender.GetExchangeUser()
+                except Exception:
+                    exchange_user = None
+                if exchange_user is not None:
+                    primary = self._safe_get_attr(exchange_user, "PrimarySmtpAddress")
+                    if primary:
+                        return primary
+
+            # PropertyAccessor: PidTagSenderSmtpAddress (reliable on Outlook 2007+).
+            try:
+                prop_accessor = mail_item.PropertyAccessor
+                smtp = prop_accessor.GetProperty(
+                    "http://schemas.microsoft.com/mapi/proptag/0x5D01001F"
+                )
+                if smtp:
+                    return smtp
+            except Exception:
+                pass
+
+            # Last-ditch salvage: pull an SMTP-shaped token out of whatever we have.
+            match = _SMTP_REGEX.search(raw_address)
+            if match:
+                return match.group(0)
+
+            return raw_address
+        except Exception:
+            return self._safe_get_attr(mail_item, "SenderEmailAddress", "") or ""
+
+    @staticmethod
+    def _format_com_datetime(value):
+        """Format a COM/pywintypes datetime to 'YYYY-MM-DD HH:MM:SS' or None.
+
+        Handles both real datetime objects (strftime) and pywintypes Time objects
+        (which expose Year/Month/.../Second properties).
         """
-        List emails from the specified folder
+        if not value:
+            return None
+        try:
+            if isinstance(value, datetime):
+                return value.strftime("%Y-%m-%d %H:%M:%S")
+            return datetime(
+                value.Year,
+                value.Month,
+                value.Day,
+                value.Hour,
+                value.Minute,
+                value.Second,
+            ).strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return None
+
+    @staticmethod
+    def _attachment_count(item):
+        """Return the number of attachments on a COM item (0 on any failure)."""
+        try:
+            return item.Attachments.Count
+        except Exception:
+            return 0
+
+    def _extract_attachments(self, item):
+        """Build a list of attachment-metadata dicts from a COM item."""
+        out = []
+        try:
+            attachments = item.Attachments
+            count = attachments.Count
+        except Exception:
+            return out
+        for i in range(1, count + 1):
+            try:
+                a = attachments.Item(i)
+            except Exception:
+                continue
+            out.append(
+                {
+                    "filename": self._safe_get_attr(a, "FileName", "") or "",
+                    "size": self._safe_get_attr(a, "Size", 0) or 0,
+                    "display_name": self._safe_get_attr(a, "DisplayName", "") or "",
+                    "content_type": self._safe_get_attr(a, "ContentType", None),
+                    "is_inline": bool(self._safe_get_attr(a, "IsInline", False)),
+                }
+            )
+        return out
+
+    @staticmethod
+    def _clean_body_top(body, max_chars=1000):
+        """Return the 'new' portion of an email body: text before quoted reply
+        chains, forwarded headers, and signature blocks.
+
+        Pure-Python heuristic so it is unit-testable without Outlook. Trims and
+        collapses runs of blank lines, then caps to max_chars.
+        """
+        if not body:
+            return ""
+        text = body.replace("\r\n", "\n").replace("\r", "\n")
+        kept = []
+        for line in text.split("\n"):
+            stripped = line.strip()
+            low = stripped.lower()
+            # Outlook/Outlook-style forwarded or original-message header blocks.
+            if low.startswith(
+                (
+                    "-----original message",
+                    "-----origineel bericht",
+                    "-----message réenvoyé",
+                    "----- doorgestuurd bericht",
+                    "-----transcribed message",
+                )
+            ):
+                break
+            # Quoted line.
+            if line.lstrip().startswith(">"):
+                break
+            # Signature separator (a run of underscores).
+            if len(stripped) >= 5 and set(stripped) <= {"_"}:
+                break
+            # Reply header lines carrying an address.
+            if low.startswith(("from:", "van:")) and ("@" in line or "<" in line):
+                break
+            if low.startswith(("to:", "cc:", "bcc:")) and "@" in line and kept:
+                break
+            if low.startswith(("sent:", "verzonden:")) and kept:
+                break
+            # "On <date> X wrote:" / "Op <date> schreef X:" footer lines.
+            if (low.endswith("wrote:") or low.endswith("schreef:")) and len(low) < 120:
+                break
+            kept.append(line)
+        cleaned = "\n".join(kept).strip()
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+        return cleaned[:max_chars]
+
+    def _mail_item_to_dict(self, item, *, include_body=False):
+        """Build an email dict from a COM item using safe accessors throughout.
+
+        Works for MailItem as well as non-mail items (meeting notifications, etc.):
+        fields that don't exist on the item type come back as defaults instead of
+        raising, so callers can branch on 'message_class' rather than catch errors.
+        """
+        message_class = (
+            self._safe_get_attr(item, "MessageClass", "IPM.Note") or "IPM.Note"
+        )
+        d = {
+            "entry_id": self._safe_get_attr(item, "EntryID", "") or "",
+            "subject": self._safe_get_attr(item, "Subject", "") or "",
+            "sender": self.resolve_smtp_address(item),
+            "sender_name": self._safe_get_attr(item, "SenderName", "") or "",
+            "received_time": self._format_com_datetime(
+                self._safe_get_attr(item, "ReceivedTime")
+            ),
+            "sent_time": self._format_com_datetime(self._safe_get_attr(item, "SentOn")),
+            "unread": bool(self._safe_get_attr(item, "Unread", False)),
+            "has_attachments": self._attachment_count(item) > 0,
+            "message_class": message_class,
+            "to": self._safe_get_attr(item, "To", "") or "",
+            "cc": self._safe_get_attr(item, "CC", "") or "",
+            "conversation_id": self._safe_get_attr(item, "ConversationID", None),
+            "conversation_topic": self._safe_get_attr(item, "ConversationTopic", None),
+        }
+        if include_body:
+            body = self._safe_get_attr(item, "Body", "") or ""
+            html_body = self._safe_get_attr(item, "HTMLBody", "") or ""
+            d["body"] = body
+            d["html_body"] = html_body
+            d["body_top"] = self._clean_body_top(body)
+            d["bcc"] = self._safe_get_attr(item, "BCC", "") or ""
+            d["attachments"] = self._extract_attachments(item)
+        return d
+
+    def list_emails(self, limit=10, folder="Inbox", include_non_mail=False):
+        """
+        List emails from the specified folder.
+
+        By default only real email items (MessageClass IPM.Note and subtypes) are
+        returned; meeting notifications and other inbox item types are filtered out
+        at the COM level for efficiency. Pass include_non_mail=True to include them.
 
         Args:
             limit: Maximum number of emails to return
             folder: Folder name (default: Inbox)
+            include_non_mail: If True, also return non-mail items (meeting
+                notifications, post items, etc.)
 
         Returns:
             List of email dictionaries
@@ -461,7 +645,16 @@ class OutlookBridge:
             if not inbox:
                 inbox = self.get_inbox()
 
+        if inbox is None:
+            return []
+
         items = inbox.Items
+
+        # Filter to real emails (IPM.Note*) unless the caller opts out.
+        if not include_non_mail:
+            # Restrict can fail on unusual folders; fall back to unfiltered.
+            with contextlib.suppress(Exception):
+                items = items.Restrict(MAIL_ONLY_FILTER)
 
         # Sort by received time, most recent first
         items.Sort("[ReceivedTime]", True)
@@ -471,20 +664,8 @@ class OutlookBridge:
         for item in items:
             if count >= limit:
                 break
-
             try:
-                email = {
-                    "entry_id": item.EntryID,
-                    "subject": item.Subject,
-                    "sender": self.resolve_smtp_address(item),
-                    "sender_name": item.SenderName,
-                    "received_time": item.ReceivedTime.strftime("%Y-%m-%d %H:%M:%S")
-                    if item.ReceivedTime
-                    else None,
-                    "unread": item.Unread,
-                    "has_attachments": item.Attachments.Count > 0,
-                }
-                emails.append(email)
+                emails.append(self._mail_item_to_dict(item, include_body=False))
                 count += 1
             except Exception:
                 # Skip items that can't be accessed
@@ -494,32 +675,54 @@ class OutlookBridge:
 
     def get_email_body(self, entry_id):
         """
-        Get the full body of an email by entry ID (O(1) direct access)
+        Get the full body and metadata of an item by entry ID (O(1) direct access).
+
+        Works for any item type that lives in the mailbox: a real email returns
+        body/html_body and full headers; a non-mail item (e.g. a meeting
+        notification) returns everything that is accessible plus its message_class
+        so the caller can branch. Returns None only when no item matches the ID.
 
         Args:
             entry_id: Outlook EntryID of the email
 
         Returns:
-            Email dictionary with body
+            Email dictionary with body, or None if the item is not found
         """
         item = self.get_item_by_id(entry_id)
-        if item:
+        if item is None:
+            return None
+        try:
+            return self._mail_item_to_dict(item, include_body=True)
+        except Exception:
+            return None
+
+    def get_email_bodies(self, entry_ids, include_body=True):
+        """
+        Bulk-fetch full details for many EntryIDs in a single call (O(1) each).
+
+        Avoids the N+1 round-trip pattern of calling get_email_body once per item.
+
+        Args:
+            entry_ids: Iterable of Outlook EntryIDs
+            include_body: If False, fetch only summary fields (faster)
+
+        Returns:
+            List of email dictionaries for items that were found (missing IDs are
+            silently omitted)
+        """
+        results = []
+        for entry_id in entry_ids or []:
             try:
-                return {
-                    "entry_id": item.EntryID,
-                    "subject": item.Subject,
-                    "sender": self.resolve_smtp_address(item),
-                    "sender_name": item.SenderName,
-                    "body": item.Body,
-                    "html_body": item.HTMLBody,
-                    "received_time": item.ReceivedTime.strftime("%Y-%m-%d %H:%M:%S")
-                    if item.ReceivedTime
-                    else None,
-                    "has_attachments": item.Attachments.Count > 0,
-                }
+                item = self.get_item_by_id(entry_id)
             except Exception:
-                return None
-        return None
+                item = None
+            if item is None:
+                continue
+            try:
+                results.append(self._mail_item_to_dict(item, include_body=include_body))
+            except Exception:
+                continue
+        return results
 
     def list_calendar_events(self, days=7, all_events=False):
         """
@@ -1377,13 +1580,19 @@ class OutlookBridge:
                 pass
         return False
 
-    def search_emails(self, filter_query, limit=100):
+    def search_emails(self, filter_query, limit=100, include_non_mail=False):
         """
-        Search emails using Outlook Restriction filter (O(1) search, no iteration)
+        Search emails using Outlook Restrict filter (O(1) search, no iteration).
+
+        By default only real emails (MessageClass IPM.Note and subtypes) are
+        returned; pass include_non_mail=True to also match meeting items etc.
 
         Args:
-            filter_query: SQL query string for filtering
+            filter_query: SQL query string for filtering (e.g. "[Unread] = TRUE",
+                "[Subject] LIKE '%meeting%'", or a date range such as
+                "[ReceivedTime] >= '07/01/2026 00:00' AND [ReceivedTime] <= '07/31/2026 23:59'")
             limit: Max results to return
+            include_non_mail: If True, do not scope the filter to IPM.Note items
 
         Returns:
             List of email dictionaries
@@ -1393,8 +1602,18 @@ class OutlookBridge:
             folder = self.get_inbox()
 
             items = folder.Items
+            # Compose the effective filter. Unless the caller opts out of the
+            # mail-only scope (or already mentioned MessageClass themselves),
+            # AND in the IPM.Note range so meeting/post items are excluded.
+            effective_filter = filter_query
+            if filter_query:
+                if not include_non_mail and "messageclass" not in filter_query.lower():
+                    effective_filter = f"({filter_query}) AND {MAIL_ONLY_FILTER}"
+            elif not include_non_mail:
+                effective_filter = MAIL_ONLY_FILTER
+
             # Apply restriction filter
-            items = items.Restrict(filter_query)
+            items = items.Restrict(effective_filter)
 
             # Sort by received time, most recent first
             items.Sort("[ReceivedTime]", True)
@@ -1406,18 +1625,7 @@ class OutlookBridge:
                     break
 
                 try:
-                    email = {
-                        "entry_id": item.EntryID,
-                        "subject": item.Subject,
-                        "sender": self.resolve_smtp_address(item),
-                        "sender_name": item.SenderName,
-                        "received_time": item.ReceivedTime.strftime("%Y-%m-%d %H:%M:%S")
-                        if item.ReceivedTime
-                        else None,
-                        "unread": item.Unread,
-                        "has_attachments": item.Attachments.Count > 0,
-                    }
-                    emails.append(email)
+                    emails.append(self._mail_item_to_dict(item, include_body=False))
                     count += 1
                 except Exception:
                     # Skip items that can't be accessed
@@ -1428,7 +1636,9 @@ class OutlookBridge:
             print(f"Error searching emails: {e}", file=sys.stderr)
             return []
 
-    def search_by_sender(self, sender_email, limit=100, folder="Inbox"):
+    def search_by_sender(
+        self, sender_email, limit=100, folder="Inbox", include_non_mail=False
+    ):
         """
         Search emails by sender email address (handles Exchange addresses).
 
@@ -1440,6 +1650,7 @@ class OutlookBridge:
             sender_email: Email address to search for
             limit: Max results to return (default: 100)
             folder: Folder name to search in (default: "Inbox")
+            include_non_mail: If True, also consider non-mail items
 
         Returns:
             List of email dictionaries matching the sender
@@ -1454,9 +1665,14 @@ class OutlookBridge:
                     mail_folder = self.get_inbox()
 
             items = mail_folder.Items
+            # Filter to real emails unless the caller opts out.
+            if not include_non_mail:
+                with contextlib.suppress(Exception):
+                    items = items.Restrict(MAIL_ONLY_FILTER)
             # Sort by received time, most recent first
             items.Sort("[ReceivedTime]", True)
 
+            target = (sender_email or "").lower()
             emails = []
             count = 0
             for item in items:
@@ -1464,23 +1680,10 @@ class OutlookBridge:
                     break
 
                 try:
-                    # Resolve SMTP address (handles Exchange addresses)
-                    smtp_address = self.resolve_smtp_address(item)
-
-                    # Case-insensitive email match
-                    if smtp_address.lower() == sender_email.lower():
-                        email = {
-                            "entry_id": item.EntryID,
-                            "subject": item.Subject,
-                            "sender": smtp_address,
-                            "sender_name": item.SenderName,
-                            "received_time": item.ReceivedTime.strftime("%Y-%m-%d %H:%M:%S")
-                            if item.ReceivedTime
-                            else None,
-                            "unread": item.Unread,
-                            "has_attachments": item.Attachments.Count > 0,
-                        }
-                        emails.append(email)
+                    d = self._mail_item_to_dict(item, include_body=False)
+                    # Case-insensitive email match on the resolved SMTP address
+                    if d["sender"] and d["sender"].lower() == target:
+                        emails.append(d)
                         count += 1
                 except Exception:
                     # Skip items that can't be accessed
@@ -1490,6 +1693,40 @@ class OutlookBridge:
         except Exception as e:
             print(f"Error searching emails by sender: {e}", file=sys.stderr)
             return []
+
+    def get_inbox_stats(self, folder="Inbox"):
+        """
+        Return cheap total/unread counts for a folder without fetching items.
+
+        Uses Restrict+Count at the COM level so it is O(1)-ish regardless of
+        folder size. Useful for pagination decisions and inbox monitoring.
+
+        Args:
+            folder: Folder name (default: "Inbox")
+
+        Returns:
+            Dict with 'folder', 'total', and 'unread' integer counts
+        """
+        try:
+            if folder == "Inbox":
+                mail_folder = self.get_inbox()
+            else:
+                mail_folder = self.get_folder_by_name(folder)
+                if not mail_folder:
+                    mail_folder = self.get_inbox()
+
+            if mail_folder is None:
+                return {"folder": folder, "total": 0, "unread": 0}
+
+            items = mail_folder.Items
+            total = self._safe_get_attr(items, "Count", 0) or 0
+            try:
+                unread = items.Restrict("[Unread] = TRUE").Count
+            except Exception:
+                unread = 0
+            return {"folder": folder, "total": int(total), "unread": int(unread)}
+        except Exception:
+            return {"folder": folder, "total": 0, "unread": 0}
 
     def get_free_busy(
         self, email_address=None, start_date=None, end_date=None, entry_id=None
